@@ -236,3 +236,42 @@ header {
   #scroll-container { display: block; overflow-y: auto; height: auto; }
   body { overflow-y: auto; height: auto; }
 }
+
+/* ================= ПРЕЛОАДЕР ================= */
+.preloader {
+  position: fixed; inset: 0; z-index: 99999;
+  background-color: var(--bg); /* Темный фон */
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+.preloader.hidden {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+.preloader-content {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+
+.loader-ring {
+  width: 80px; height: 80px;
+  border: 2px solid rgba(255, 0, 51, 0.2);
+  border-top-color: var(--red);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loader-text {
+  font-family: var(--font-display); font-size: 24px; color: var(--text);
+  letter-spacing: 0.1em;
+}
+
+.loader-hint {
+  font-family: 'Courier New', monospace; font-size: 12px; color: var(--red);
+  letter-spacing: 0.2em; animation: pulse 1.5s infinite;
+}

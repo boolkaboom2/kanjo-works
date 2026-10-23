@@ -1,6 +1,27 @@
 (() => {
   'use strict';
 
+    /* ---------- 0. ПРЕЛОАДЕР ---------- */
+  // Показываем прелоадер, пока сервер не ответит
+  window.addEventListener('load', async () => {
+    try {
+      // Делаем легкий запрос к нашему API, чтобы "разбудить" Render
+      await fetch('/api/book', { 
+        method: 'HEAD',
+        cache: 'no-store' 
+      }).catch(() => {});
+    } finally {
+      // Прячем прелоадер в любом случае (даже если ошибка сети)
+      const preloader = document.getElementById('preloader');
+      if (preloader) {
+        // Небольшая задержка для красоты
+        setTimeout(() => {
+          preloader.classList.add('hidden');
+        }, 800);
+      }
+    }
+  });
+  
   /* ---------- 1. АВТОМОБИЛЬНАЯ АУДИО СИСТЕМА ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   let audioCtx;
