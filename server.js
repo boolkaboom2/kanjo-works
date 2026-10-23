@@ -3,6 +3,9 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const basicAuth = require('express-basic-auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,17 +13,29 @@ const PORT = process.env.PORT || 3000;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+// 1. Защита HTTP-заголовков (от XSS и кликджекинга)
+app.use(helmet({
+  contentSecurityPolicy: false, // Отключаем строгий CSP, чтобы не ломались стили и шрифты
+  crossOriginResourcePolicy: false
+}));
+
+// 2. Ограничение количества запросов (Anti-Spam)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 5, // Максимум 5 заявок с одного IP за 15 минут
+  message: { error: 'Слишком много запросов. Попробуйте позже.' }
+});
+app.use('/api/book', limiter);
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
-// Подключение к БД (Render сам подставит DATABASE_URL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Создание таблицы
 pool.query(`CREATE TABLE IF NOT EXISTS bookings (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255),
@@ -44,8 +59,18 @@ async function sendTelegramMessage(text) {
 }
 
 app.post('/api/book', async (req, res) => {
-  const { name, phone, car } = req.body;
-  if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
+  let { name, phone, car } = req.body;
+  
+  // 3. Простая валидация длины, чтобы не закидали гигантским текстом
+  if (!name || !phone || !car || name.length > 50 || phone.length > 20 || car.length > 100) {
+    return res.status(400).json({ error: 'Некорректные данные' });
+  }
+
+  // Очистка от HTML-тегов
+  const sanitize = (str) => str.replace(/<[^>]*>?/gm, '');
+  name = sanitize(name);
+  phone = sanitize(phone);
+  car = sanitize(car);
 
   try {
     const result = await pool.query(
@@ -61,7 +86,14 @@ app.post('/api/book', async (req, res) => {
   }
 });
 
-app.get('/admin', async (req, res) => {
+// 4. Защита админки паролем (Basic Auth)
+const adminAuth = basicAuth({
+  users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
+  challenge: true,
+  realm: 'KANJO_ADMIN'
+});
+
+app.get('/admin', adminAuth, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM bookings ORDER BY created_at DESC`);
     let html = `
