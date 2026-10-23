@@ -1,21 +1,17 @@
 {
-  "name": "vibecode",
+  "name": "kanjo-works",
   "version": "1.0.0",
-  "description": "",
-  "main": "script.js",
+  "description": "JDM Tuning Website",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.6",
-    "express": "^5.3.0"
-  },
-  "allowScripts": {
-    "sqlite3@6.0.1": true
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
   }
 }
