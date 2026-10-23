@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const basicAuth = require('express-basic-auth');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
