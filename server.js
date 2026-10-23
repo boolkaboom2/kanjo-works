@@ -13,17 +13,17 @@ const PORT = process.env.PORT || 3000;
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// 1. Защита HTTP-заголовков (от XSS и кликджекинга)
+// 1. Защита HTTP-заголовков
 app.use(helmet({
-  contentSecurityPolicy: false, // Отключаем строгий CSP, чтобы не ломались стили и шрифты
+  contentSecurityPolicy: false,
   crossOriginResourcePolicy: false
 }));
 
-// 2. Ограничение количества запросов (Anti-Spam)
+// 2. Ограничение количества запросов (1 запрос в минуту)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 минут
-  max: 5, // Максимум 5 заявок с одного IP за 15 минут
-  message: { error: 'Слишком много запросов. Попробуйте позже.' }
+  windowMs: 1 * 60 * 1000, // 1 минута
+  max: 1, // 1 запрос в минуту с одного IP
+  message: { error: 'Слишком много запросов. Подождите минуту.' }
 });
 app.use('/api/book', limiter);
 
@@ -31,11 +31,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); 
 
+// Подключение к БД
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
+// Создание таблицы
 pool.query(`CREATE TABLE IF NOT EXISTS bookings (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255),
@@ -44,6 +46,7 @@ pool.query(`CREATE TABLE IF NOT EXISTS bookings (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`).catch(err => console.error('DB Init Error:', err));
 
+// Отправка в Telegram
 async function sendTelegramMessage(text) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
@@ -58,16 +61,17 @@ async function sendTelegramMessage(text) {
   }
 }
 
+// API Заявки
 app.post('/api/book', async (req, res) => {
   let { name, phone, car } = req.body;
   
-  // 3. Простая валидация длины, чтобы не закидали гигантским текстом
+  // Валидация длины
   if (!name || !phone || !car || name.length > 50 || phone.length > 20 || car.length > 100) {
     return res.status(400).json({ error: 'Некорректные данные' });
   }
 
-  // Очистка от HTML-тегов
-  const sanitize = (str) => str.replace(/<[^>]*>?/gm, '');
+  // Очистка от HTML-тегов (Anti-XSS)
+  const sanitize = (str) => String(str).replace(/<[^>]*>?/gm, '');
   name = sanitize(name);
   phone = sanitize(phone);
   car = sanitize(car);
@@ -86,13 +90,14 @@ app.post('/api/book', async (req, res) => {
   }
 });
 
-// 4. Защита админки паролем (Basic Auth)
+// 3. Защита админки паролем (Basic Auth)
 const adminAuth = basicAuth({
   users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
   challenge: true,
   realm: 'KANJO_ADMIN'
 });
 
+// Админка
 app.get('/admin', adminAuth, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM bookings ORDER BY created_at DESC`);
