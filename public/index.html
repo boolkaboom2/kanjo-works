@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KANJO WORKS | JDM Tuning</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="noise"></div>
+
+  <header>
+    <div class="logo" id="logo-btn">KANJO<span>_</span>WORKS</div>
+    <div class="header-info">
+      <span>TOKYO // 35.6762° N, 139.6503° E</span>
+      <span id="clock">00:00:00</span>
+      <button id="sound-toggle" class="sound-btn" title="Звук вкл/выкл">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="scroll-container">
+    
+    <section class="panel hero">
+      <div class="hero-content">
+        <h1 class="glitch" data-text="SPEED">SPEED</h1>
+        <h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1>
+        <p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p>
+        <div class="scroll-hint">
+          <span>SCROLL TO EXPLORE</span>
+          <span class="arrow">→</span>
+        </div>
+      </div>
+      <div class="hero-bg">
+        <img src="img/hero.jpg" alt="JDM Garage">
+      </div>
+    </section>
+
+    <section class="panel services">
+      <div class="panel-title">
+        <h2>OUR <br> SERVICES</h2>
+        <span class="kanji">サービス</span>
+      </div>
+      <div class="services-grid" id="services-grid"></div>
+    </section>
+
+    <section class="panel gallery">
+      <div class="panel-title">
+        <h2>THE <br> GARAGE</h2>
+        <span class="kanji">ガレージ</span>
+      </div>
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </section>
+
+    <section class="panel configurator">
+      <div class="panel-title">
+        <h2>BUILD YOUR <br> LEGEND</h2>
+        <span class="kanji">チューニング</span>
+      </div>
+      <div class="config-layout">
+        <div class="config-controls">
+          <div class="config-group">
+            <label>ВЫБЕРИ БАЗУ</label>
+            <div class="select-wrapper">
+              <select id="base-car">
+                <option value="s15" data-hp="250" data-price="1500000">NISSAN SILVIA S15</option>
+                <option value="supra" data-hp="320" data-price="3500000">TOYOTA SUPRA MK4</option>
+                <option value="rx7" data-hp="280" data-price="2800000">MAZDA RX-7</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="config-group">
+            <label>УСТАНОВИТЬ ДЕТАЛИ</label>
+            <div class="part-row">
+              <input type="checkbox" id="part-turbo" data-hp="150" data-price="450000">
+              <label for="part-turbo">TURBO KIT (+150 HP)</label>
+            </div>
+            <div class="part-row">
+              <input type="checkbox" id="part-ecu" data-hp="60" data-price="120000">
+              <label for="part-ecu">ECU TUNE (+60 HP)</label>
+            </div>
+            <div class="part-row">
+              <input type="checkbox" id="part-exhaust" data-hp="25" data-price="80000">
+              <label for="part-exhaust">TITANIUM EXHAUST (+25 HP)</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-result">
+          <div class="result-box">
+            <span class="result-label">ИТОГОВАЯ МОЩНОСТЬ</span>
+            <div class="result-hp"><span id="total-hp">250</span> <small>HP</small></div>
+          </div>
+          <div class="result-box">
+            <span class="result-label">СТОИМОСТЬ ПРОЕКТА</span>
+            <div class="result-price">от <span id="total-price">1 500 000</span> ₽</div>
+          </div>
+          <button class="btn-racing open-booking">ОБСУДИТЬ ПРОЕКТ</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel contact">
+      <div class="contact-layout">
+        <div class="contact-info">
+          <h2>READY <br>TO RACE?</h2>
+          <p>Запишись на консультацию в наш бокс. Мы находимся в промзоне Токио, найти нас легко по звуку выхлопа.</p>
+          <div class="info-block">
+            <h3>LOCATION</h3>
+            <p>Tokyo, Shibuya City<br>2-Chome, 14-5</p>
+          </div>
+          <div class="info-block">
+            <h3>CONTACT</h3>
+            <p>+81 90 1234 5678<br>race@kanjoworks.jp</p>
+          </div>
+          <div class="socials">
+            <a href="https://www.instagram.com" target="_blank" rel="noopener">INSTAGRAM</a>
+            <a href="https://www.youtube.com" target="_blank" rel="noopener">YOUTUBE</a>
+            <a href="https://telegram.org" target="_blank" rel="noopener">TELEGRAM</a>
+          </div>
+        </div>
+
+        <div class="contact-form-wrap">
+          <h3>BOOK A SLOT</h3>
+          <form id="inline-booking-form">
+            <div class="input-group">
+              <input type="text" placeholder="YOUR NAME" required>
+            </div>
+            <div class="input-group">
+              <input type="tel" placeholder="PHONE NUMBER" required>
+            </div>
+            <div class="input-group">
+              <input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required>
+            </div>
+            <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
+          </form>
+        </div>
+      </div>
+      <div class="contact-footer">
+        <p>KANJO WORKS © 2024. ALL RIGHTS RESERVED.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="booking-modal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal">✕</button>
+      <h2>BOOK A SLOT</h2>
+      <p>Оставь данные, и мы свяжемся с тобой.</p>
+      <form id="booking-form">
+        <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
+        <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
+        <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required></div>
+        <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="service-modal" class="modal">
+    <div class="modal-content wide">
+      <button class="close-modal">✕</button>
+      <h2 id="srv-title">SERVICE</h2>
+      <div class="srv-details">
+        <p id="srv-desc" class="srv-desc">Описание...</p>
+        <ul id="srv-list" class="srv-list"></ul>
+        <div class="srv-footer">
+          <div class="srv-price">Цена: <span id="srv-price">от 100 000 ₽</span></div>
+          <button class="btn-racing open-booking">ЗАКАЗАТЬ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="car-modal" class="modal">
+    <div class="modal-content car-modal-content">
+      <button class="close-modal">✕</button>
+      <div class="car-modal-layout">
+        <div class="car-modal-img">
+          <img id="cm-img" src="" alt="Car">
+        </div>
+        <div class="car-modal-info">
+          <h2 id="cm-title">CAR NAME</h2>
+          <p id="cm-spec" class="cm-spec">ENGINE SPEC</p>
+          <table class="car-table">
+            <tr><td>ДВИГАТЕЛЬ</td><td id="cm-engine">-</td></tr>
+            <tr><td>МОЩНОСТЬ</td><td id="cm-hp">-</td></tr>
+            <tr><td>МАССА</td><td id="cm-weight">-</td></tr>
+            <tr><td>ПРИВОД</td><td id="cm-drive">-</td></tr>
+            <tr><td>0-100 КМ/Ч</td><td id="cm-accel">-</td></tr>
+          </table>
+          <p class="cm-desc" id="cm-desc">Подробное описание проекта...</p>
+          <button class="btn-racing full-width open-booking">ХОЧУ ТАКУЮ ЖЕ</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
