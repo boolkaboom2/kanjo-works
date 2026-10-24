@@ -324,12 +324,24 @@
         if (res.status === 401) { localStorage.removeItem('kanjo_token'); authToken = null; updateAuthUI(); profileModal.classList.remove('open'); return; }
         const bookings = await res.json();
         if (bookings.length === 0) { list.innerHTML = '<p style="color:var(--grey);">У вас пока нет заявок.</p>'; return; }
-        list.innerHTML = bookings.map(b => `
+              list.innerHTML = bookings.map(b => {
+          // Определяем класс для цвета статуса
+          let statusClass = 'status-new';
+          if (b.status === 'В работе') statusClass = 'status-work';
+          if (b.status === 'Выполнена') statusClass = 'status-done';
+
+          return `
           <div class="profile-card">
-            <div class="profile-card-info"><h4>${b.car}</h4><p>Имя: ${b.name} | Тел: ${b.phone}</p></div>
-            <div class="profile-card-date">${new Date(b.created_at).toLocaleString('ru-RU')}</div>
+            <div class="profile-card-info">
+              <h4>${b.car}</h4>
+              <p>Имя: ${b.name} | Тел: ${b.phone}</p>
+            </div>
+            <div style="text-align: right;">
+              <div class="status-badge ${statusClass}">${b.status || 'Новая'}</div>
+              <div class="profile-card-date">${new Date(b.created_at).toLocaleString('ru-RU')}</div>
+            </div>
           </div>
-        `).join('');
+        `}).join('');
       } catch (err) { list.innerHTML = '<p style="color:red;">Ошибка загрузки</p>'; }
     });
   }

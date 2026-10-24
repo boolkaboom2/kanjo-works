@@ -396,3 +396,31 @@ header {
   background: var(--red);
   color: white;
 }
+
+/* Статусы */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.status-new { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.status-work { background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107; }
+.status-done { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+
+/* Стили для селекта в админке */
+.status-select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 5px;
+  border-radius: 4px;
+  font-family: var(--font-body);
+  outline: none;
+}
+.status-select.status-Новая { border-color: #555; }
+.status-select.status-В_работе { border-color: #ffc107; color: #ffc107; }
+.status-select.status-Выполнена { border-color: #10b981; color: #10b981; }

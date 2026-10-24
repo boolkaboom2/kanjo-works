@@ -13,16 +13,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- ЗАЯВКИ ---
-  async function loadBookings() {
+    async function loadBookings() {
     const tbody = document.getElementById('bookings-list');
     try {
       const res = await fetch('/api/admin/bookings');
       const data = await res.json();
       tbody.innerHTML = data.map(b => `
-        <tr><td>${b.id}</td><td>${b.name}</td><td>${b.phone}</td><td>${b.car}</td><td>${new Date(b.created_at).toLocaleString('ru-RU')}</td></tr>
+        <tr>
+          <td>${b.id}</td>
+          <td>${b.name}</td>
+          <td>${b.phone}</td>
+          <td>${b.car}</td>
+          <td>
+            <select onchange="updateBookingStatus(${b.id}, this.value)" class="status-select status-${b.status}">
+              <option value="Новая" ${b.status === 'Новая' ? 'selected' : ''}>Новая</option>
+              <option value="В работе" ${b.status === 'В работе' ? 'selected' : ''}>В работе</option>
+              <option value="Выполнена" ${b.status === 'Выполнена' ? 'selected' : ''}>Выполнена</option>
+            </select>
+          </td>
+          <td>${new Date(b.created_at).toLocaleString('ru-RU')}</td>
+        </tr>
       `).join('');
     } catch (err) { console.error(err); }
   }
+
+  // Глобальная функция для смены статуса
+  window.updateBookingStatus = async (id, newStatus) => {
+    try {
+      await fetch(`/api/admin/bookings/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      loadBookings(); // Перезагружаем, чтобы обновить цвета
+    } catch (err) { console.error(err); }
+  };
 
   // --- МАШИНЫ ---
   const carModal = document.getElementById('car-modal');
