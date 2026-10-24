@@ -29,12 +29,28 @@
   /* ---------- 1. TOAST УВЕДОМЛЕНИЯ ---------- */
   function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
+    const creditsBtn = document.getElementById('credits-btn');
+    
+    // Прячем кнопку при появлении уведомления
+    if (creditsBtn) creditsBtn.classList.add('hidden');
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()">✕</button>`;
     container.appendChild(toast);
+    
     setTimeout(() => { toast.classList.add('show'); }, 10);
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 4000);
+    
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        toast.remove();
+        // Если это было последнее уведомление, возвращаем кнопку на место
+        if (container.children.length === 0 && creditsBtn) {
+          creditsBtn.classList.remove('hidden');
+        }
+      }, 300);
+    }, 4000);
   }
 
   /* ---------- 2. МАСКА ТЕЛЕФОНА ---------- */
@@ -52,7 +68,7 @@
     input.addEventListener('blur', (e) => { if (e.target.value === '+7 (') e.target.value = ''; });
   });
 
-  /* ---------- 3. ЗВУКИ ---------- */
+  /* ---------- 3. ЗВУКИ (V8 + ТУРБИНА) ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx, isSoundOn = true;
   function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   
@@ -82,26 +98,43 @@
     }
     else if (type === 'car') {
       const now = audioCtx.currentTime;
-      // Рокот мотора
-      const osc1 = audioCtx.createOscillator(); const osc2 = audioCtx.createOscillator();
-      const engineGain = audioCtx.createGain(); const filter = audioCtx.createBiquadFilter();
-      osc1.type = 'sawtooth'; osc2.type = 'square';
-      osc1.frequency.setValueAtTime(60, now); osc1.frequency.linearRampToValueAtTime(180, now + 0.25); osc1.frequency.exponentialRampToValueAtTime(70, now + 0.6);
-      osc2.frequency.setValueAtTime(30, now); osc2.frequency.linearRampToValueAtTime(90, now + 0.25); osc2.frequency.exponentialRampToValueAtTime(35, now + 0.6);
-      filter.type = 'lowpass'; filter.frequency.setValueAtTime(500, now); filter.frequency.linearRampToValueAtTime(1500, now + 0.25); filter.frequency.exponentialRampToValueAtTime(400, now + 0.6);
-      engineGain.gain.setValueAtTime(0.15, now); engineGain.gain.linearRampToValueAtTime(0.25, now + 0.25); engineGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-      osc1.connect(filter); osc2.connect(filter); filter.connect(engineGain); engineGain.connect(audioCtx.destination);
-      osc1.start(now); osc1.stop(now + 0.7); osc2.start(now); osc2.stop(now + 0.7);
-      // Пшик турбины
-      const bufferSize = audioCtx.sampleRate * 0.5; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0);
+      
+      const osc1 = audioCtx.createOscillator(); 
+      const osc2 = audioCtx.createOscillator(); 
+      const osc3 = audioCtx.createOscillator(); 
+      const engineGain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      
+      osc1.type = 'sawtooth'; osc2.type = 'square'; osc3.type = 'sawtooth';
+      
+      osc1.frequency.setValueAtTime(40, now); osc1.frequency.linearRampToValueAtTime(80, now + 0.3); osc1.frequency.exponentialRampToValueAtTime(30, now + 0.8);
+      osc2.frequency.setValueAtTime(80, now); osc2.frequency.linearRampToValueAtTime(160, now + 0.3); osc2.frequency.exponentialRampToValueAtTime(60, now + 0.8);
+      osc3.frequency.setValueAtTime(160, now); osc3.frequency.linearRampToValueAtTime(320, now + 0.3); osc3.frequency.exponentialRampToValueAtTime(120, now + 0.8);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(300, now); filter.frequency.linearRampToValueAtTime(1200, now + 0.3); filter.frequency.exponentialRampToValueAtTime(200, now + 0.8);
+      filter.Q.value = 2;
+
+      engineGain.gain.setValueAtTime(0, now); engineGain.gain.linearRampToValueAtTime(0.3, now + 0.1); engineGain.gain.linearRampToValueAtTime(0.1, now + 0.4); engineGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+      osc1.connect(filter); osc2.connect(filter); osc3.connect(filter);
+      filter.connect(engineGain); engineGain.connect(audioCtx.destination);
+      osc1.start(now); osc1.stop(now + 0.9); osc2.start(now); osc2.stop(now + 0.9); osc3.start(now); osc3.stop(now + 0.9);
+
+      const bufferSize = audioCtx.sampleRate * 0.4; 
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); 
+      const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      
       const noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = buffer;
-      const noiseFilter = audioCtx.createBiquadFilter(); noiseFilter.type = 'bandpass';
-      noiseFilter.frequency.setValueAtTime(4000, now + 0.35); noiseFilter.frequency.exponentialRampToValueAtTime(1500, now + 0.65); noiseFilter.Q.value = 2;
+      const noiseFilter = audioCtx.createBiquadFilter(); 
+      noiseFilter.type = 'bandpass'; noiseFilter.frequency.setValueAtTime(3500, now + 0.45); noiseFilter.frequency.exponentialRampToValueAtTime(2000, now + 0.8); noiseFilter.Q.value = 3;
+      
       const noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(0.001, now); noiseGain.gain.setValueAtTime(0.001, now + 0.3); noiseGain.gain.linearRampToValueAtTime(0.08, now + 0.35); noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      noiseGain.gain.setValueAtTime(0.001, now); noiseGain.gain.setValueAtTime(0.001, now + 0.4); noiseGain.gain.linearRampToValueAtTime(0.15, now + 0.45); noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      
       noiseNode.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
-      noiseNode.start(now); noiseNode.stop(now + 0.7);
+      noiseNode.start(now); noiseNode.stop(now + 0.9);
     }
   }
 
@@ -119,7 +152,7 @@
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${c.img}" alt="${c.title}"><div class="gallery-item-info"><h4>${c.title}</h4><p>${c.spec}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
-        const car = carsData[item.dataset.index]; playSound('car'); // ЗВУК МАШИНЫ
+        const car = carsData[item.dataset.index]; playSound('car'); 
         document.getElementById('cm-img').src = car.img; document.getElementById('cm-title').textContent = car.title; document.getElementById('cm-spec').textContent = car.spec;
         document.getElementById('cm-engine').textContent = car.engine; document.getElementById('cm-hp').textContent = car.hp; document.getElementById('cm-weight').textContent = car.weight;
         document.getElementById('cm-drive').textContent = car.drive; document.getElementById('cm-accel').textContent = car.accel; document.getElementById('cm-desc').textContent = car.description;
@@ -251,7 +284,6 @@
         document.getElementById('auth-step-1').style.display = 'none';
         document.getElementById('auth-step-2').style.display = 'block';
         
-        // ВЫВОДИМ КОД ПРЯМО НА САЙТЕ И АВТОМАТИЧЕСКИ ВСТАВЛЯЕМ
         showToast(`Ваш код: ${data.code}`, 'success');
         document.getElementById('auth-code').value = data.code;
       }
