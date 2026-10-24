@@ -293,6 +293,18 @@ app.post('/api/admin/services', adminAuth, async (req, res) => { const { num, ti
 app.put('/api/admin/services/:id', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`UPDATE services SET num=$1, title=$2, short=$3, full_description=$4, works=$5, price=$6 WHERE id=$7`, [num, title, short, full_description, works, price, req.params.id]); res.json({ message: 'OK' }); });
 app.delete('/api/admin/services/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM services WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });
 
+app.get('/api/admin/reviews', adminAuth, async (req, res) => {
+  const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
+  res.json(r.rows);
+});
+
+app.delete('/api/admin/reviews/:id', adminAuth, async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM reviews WHERE id = $1`, [req.params.id]);
+    res.json({ message: 'Отзыв удален' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.post('/api/telegram-webhook', async (req, res) => {
   const { callback_query } = req.body;
   if (!callback_query) return res.sendStatus(200);

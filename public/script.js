@@ -92,17 +92,6 @@
   if (soundBtn) soundBtn.addEventListener('click', () => { isSoundOn = !isSoundOn; soundBtn.classList.toggle('muted', !isSoundOn); });
   setInterval(() => { const c = document.getElementById('clock'); if (c) c.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`; }, 1000);
 
-  // СЛАЙДЕР ДО/ПОСЛЕ
-  const slider = document.querySelector('.compare-slider');
-  const beforeImg = document.querySelector('.compare-before');
-  const line = document.querySelector('.compare-line');
-  if (slider && beforeImg && line) {
-    slider.addEventListener('input', (e) => {
-      beforeImg.style.width = `${e.target.value}%`;
-      line.style.left = `${e.target.value}%`;
-    });
-  }
-
   let carsData = [], servicesData = [];
   let selectedCarId = null, selectedCarHp = 0, selectedCarPrice = 0;
   const customSelect = document.getElementById('base-car-select');
@@ -166,7 +155,7 @@
   }
   loadCars(); loadServices();
 
-  // ОТЗЫВЫ
+  // ОТЗЫВЫ НА ГЛАВНОЙ
   async function loadMainReviews() {
     const grid = document.getElementById('main-reviews-grid'); if (!grid) return;
     try {
@@ -401,12 +390,30 @@
     });
   };
 
-  // ОТЗЫВЫ В ЛК
+  // ОТЗЫВЫ В ЛК С КАСТОМНЫМИ ЗВЕЗДАМИ
+  const stars = document.querySelectorAll('.star');
+  let currentRating = 5;
+  const ratingText = document.getElementById('selected-rating-text');
+
+  stars.forEach(star => {
+    star.addEventListener('mouseover', () => {
+      const val = parseInt(star.dataset.val);
+      stars.forEach(s => { s.style.color = parseInt(s.dataset.val) <= val ? 'var(--red)' : 'var(--grey)'; });
+    });
+    star.addEventListener('mouseout', () => {
+      stars.forEach(s => { s.style.color = parseInt(s.dataset.val) <= currentRating ? 'var(--red)' : 'var(--grey)'; });
+    });
+    star.addEventListener('click', () => {
+      currentRating = parseInt(star.dataset.val);
+      ratingText.textContent = `${currentRating}/5`;
+    });
+  });
+  stars.forEach(s => { if (parseInt(s.dataset.val) <= currentRating) s.style.color = 'var(--red)'; });
+
   async function loadUserReviews() {
     const list = document.getElementById('profile-reviews-list'); if (!list) return;
     list.innerHTML = 'Загрузка...';
     const res = await fetch('/api/reviews'); const allReviews = await res.json();
-    // Фильтруем по имени (упрощенно, так как user_id привязан к отзыву)
     const userReviews = allReviews.filter(r => r.name === currentUser?.name);
     
     list.innerHTML = userReviews.length ? userReviews.map(r => `
@@ -421,13 +428,12 @@
 
   document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
     const text = document.getElementById('review-text').value;
-    const rating = document.getElementById('review-rating').value;
     if (!text) return showToast('Напишите текст отзыва', 'error');
     
     try {
       const res = await fetch('/api/user/reviews', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ text, rating })
+        body: JSON.stringify({ text, rating: currentRating })
       });
       if (res.ok) {
         showToast('Спасибо за отзыв!', 'success');
@@ -506,7 +512,7 @@
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
     
-    form.querySelectorAll('input[type="text"]')[1].value = srvName; // Вписываем название услуги
+    form.querySelectorAll('input[type="text"]')[1].value = srvName;
     
     if (currentUser) {
       form.querySelector('input[type="text"]').value = currentUser.name || '';

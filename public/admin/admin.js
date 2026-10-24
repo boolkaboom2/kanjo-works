@@ -267,3 +267,35 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeTab === 'clients') loadClients();
   }, 5000);
 });
+
+// В функции инициализации (внизу) добавь loadReviews();
+// В setInterval добавь:
+// if (activeTab === 'reviews') loadReviews();
+
+// Сама функция:
+async function loadReviews() {
+  const tbody = document.getElementById('reviews-list');
+  try {
+    const res = await fetch('/api/admin/reviews');
+    const data = await res.json();
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${r.id}</td>
+        <td>${r.name}</td>
+        <td style="color:var(--red);">${'★'.repeat(r.rating)}</td>
+        <td>${r.text}</td>
+        <td>${new Date(r.created_at).toLocaleString('ru-RU')}</td>
+        <td>
+          <span class="action-link delete" onclick="deleteReview(${r.id})">Удалить</span>
+        </td>
+      </tr>
+    `).join('');
+  } catch (err) { console.error(err); }
+}
+
+window.deleteReview = (id) => {
+  showAdminConfirm('Удалить этот отзыв?', async () => {
+    await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+    loadReviews();
+  });
+};
