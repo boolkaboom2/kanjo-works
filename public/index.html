@@ -33,6 +33,26 @@
     
     <section class="panel gallery"><div class="panel-title"><h2>THE <br> GARAGE</h2><span class="kanji">ガレージ</span></div><div class="gallery-grid" id="gallery-grid"></div></section>
     
+    <!-- СЕКЦИЯ СРАВНЕНИЯ -->
+    <section class="panel comparison">
+      <div class="panel-title">
+        <h2>BEFORE / <br> AFTER</h2>
+        <span class="kanji">ビフォーアフター</span>
+      </div>
+      <div class="compare-wrapper">
+        <div class="compare-img compare-after">
+          <img src="img/car3.jpg" alt="After">
+          <span class="label-after">AFTER</span>
+        </div>
+        <div class="compare-img compare-before">
+          <img src="img/car1.jpg" alt="Before">
+          <span class="label-before">BEFORE</span>
+        </div>
+        <input type="range" min="0" max="100" value="50" class="compare-slider">
+        <div class="compare-line"></div>
+      </div>
+    </section>
+
     <section class="panel configurator">
       <div class="panel-title"><h2>BUILD YOUR <br> LEGEND</h2><span class="kanji">チューニング</span></div>
       <div class="config-layout">
@@ -62,6 +82,15 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <!-- СЕКЦИЯ ОТЗЫВОВ -->
+    <section class="panel reviews-section">
+      <div class="panel-title">
+        <h2>CLIENT <br> REVIEWS</h2>
+        <span class="kanji">レビュー</span>
+      </div>
+      <div id="main-reviews-grid" style="display: flex; gap: 20px; overflow-x: auto; margin-top: 40px; padding-bottom: 20px;"></div>
     </section>
 
     <section class="panel contact">
@@ -188,9 +217,32 @@
       <div class="auth-tabs" style="margin-bottom: 20px;">
         <button class="auth-tab active" id="tab-btn-bookings">МОИ ЗАЯВКИ</button>
         <button class="auth-tab" id="tab-btn-builds">МОЙ ГАРАЖ</button>
+        <button class="auth-tab" id="tab-btn-reviews">МОИ ОТЗЫВЫ</button>
       </div>
+      
       <div id="profile-tab-bookings"><div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
       <div id="profile-tab-builds" style="display: none;"><div id="profile-builds-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
+      
+      <!-- ВКЛАДКА ОТЗЫВОВ -->
+      <div id="profile-tab-reviews" style="display: none;">
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-family: var(--font-display); font-size: 24px; color: var(--red); margin-bottom: 10px;">Оставить отзыв</h3>
+          <textarea id="review-text" placeholder="Ваш отзыв..." style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; font-family: var(--font-body); margin-bottom: 10px; resize: none;" rows="3"></textarea>
+          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+            <span style="font-size: 14px;">Оценка:</span>
+            <select id="review-rating" style="background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 5px;">
+              <option value="5">5 ★</option>
+              <option value="4">4 ★</option>
+              <option value="3">3 ★</option>
+              <option value="2">2 ★</option>
+              <option value="1">1 ★</option>
+            </select>
+          </div>
+          <button id="btn-submit-review" class="btn-racing" style="font-size: 16px; padding: 10px 20px;">ОТПРАВИТЬ</button>
+        </div>
+        <div id="profile-reviews-list" style="max-height: 30vh; overflow-y: auto;"></div>
+      </div>
+
     </div>
   </div>
 

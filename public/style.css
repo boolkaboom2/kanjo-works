@@ -11,12 +11,8 @@
 ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 4px; }
 * { scrollbar-width: thin; scrollbar-color: var(--red) var(--bg); }
 
-body { 
-  margin: 0; background-color: var(--bg); color: var(--text); font-family: var(--font-body); 
-  overflow-x: hidden; overflow-y: hidden; height: 100vh; 
-  user-select: none; /* Убирает палочку на тексте */
-}
-input, textarea { user-select: text; cursor: text; } /* Возвращает палочку в поля */
+body { margin: 0; background-color: var(--bg); color: var(--text); font-family: var(--font-body); overflow-x: hidden; overflow-y: hidden; height: 100vh; user-select: none; }
+input, textarea { user-select: text; cursor: text; }
 a { color: inherit; text-decoration: none; cursor: pointer; }
 
 .noise { position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.04; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
@@ -81,6 +77,26 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .gallery-item:hover .gallery-item-info { transform: translateY(0); }
 .gallery-item-info h4 { margin: 0; font-family: var(--font-display); font-size: 24px; }
 .gallery-item-info p { margin: 4px 0 0; color: var(--red); font-size: 12px; font-family: monospace; }
+
+/* СРАВНЕНИЕ */
+.comparison { width: 60vw; display: flex; flex-direction: column; justify-content: center; }
+.compare-wrapper { position: relative; width: 100%; height: 50vh; overflow: hidden; border: 1px solid var(--border); }
+.compare-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.compare-img img { width: 100%; height: 100%; object-fit: cover; }
+.compare-before { width: 50%; overflow: hidden; border-right: 2px solid var(--red); z-index: 2; }
+.compare-after { z-index: 1; }
+.compare-slider { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; z-index: 3; }
+.compare-line { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--red); z-index: 2; pointer-events: none; }
+.label-before, .label-after { position: absolute; bottom: 20px; padding: 5px 10px; background: #000; color: #fff; font-family: var(--font-display); font-size: 20px; z-index: 4; }
+.label-before { left: 20px; }
+.label-after { right: 20px; }
+
+/* ОТЗЫВЫ */
+.reviews-section { width: 80vw; display: flex; flex-direction: column; justify-content: center; }
+.review-card { min-width: 300px; border: 1px solid var(--border); padding: 20px; background: #111; }
+.review-stars { color: var(--red); font-size: 20px; margin-bottom: 10px; }
+.review-text { font-size: 14px; margin-bottom: 15px; font-style: italic; color: var(--grey); }
+.review-author { font-family: var(--font-display); font-size: 18px; color: var(--text); }
 
 .configurator { width: 70vw; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; overflow: hidden; }
 .config-layout { display: flex; gap: 60px; margin-top: 60px; height: 50vh; width: 100%; }
@@ -238,6 +254,8 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
   .gallery-grid { height: auto; overflow-x: auto; padding-bottom: 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
   .gallery-item { width: 80vw; max-width: 300px; height: 400px; scroll-snap-align: center; }
   .gallery-item-info { transform: translateY(0); background: linear-gradient(transparent, rgba(0,0,0,0.95)); }
+  .comparison { width: 100%; }
+  .reviews-section { width: 100%; }
   .configurator { width: 100%; overflow: visible; }
   .config-layout { flex-direction: column; height: auto; gap: 40px; }
   .config-result { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 40px; }

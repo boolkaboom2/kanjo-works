@@ -92,6 +92,17 @@
   if (soundBtn) soundBtn.addEventListener('click', () => { isSoundOn = !isSoundOn; soundBtn.classList.toggle('muted', !isSoundOn); });
   setInterval(() => { const c = document.getElementById('clock'); if (c) c.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`; }, 1000);
 
+  // СЛАЙДЕР ДО/ПОСЛЕ
+  const slider = document.querySelector('.compare-slider');
+  const beforeImg = document.querySelector('.compare-before');
+  const line = document.querySelector('.compare-line');
+  if (slider && beforeImg && line) {
+    slider.addEventListener('input', (e) => {
+      beforeImg.style.width = `${e.target.value}%`;
+      line.style.left = `${e.target.value}%`;
+    });
+  }
+
   let carsData = [], servicesData = [];
   let selectedCarId = null, selectedCarHp = 0, selectedCarPrice = 0;
   const customSelect = document.getElementById('base-car-select');
@@ -154,6 +165,22 @@
     });
   }
   loadCars(); loadServices();
+
+  // ОТЗЫВЫ
+  async function loadMainReviews() {
+    const grid = document.getElementById('main-reviews-grid'); if (!grid) return;
+    try {
+      const res = await fetch('/api/reviews'); const reviews = await res.json();
+      grid.innerHTML = reviews.length ? reviews.map(r => `
+        <div class="review-card">
+          <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+          <p class="review-text">"${r.text}"</p>
+          <span class="review-author">— ${r.name}</span>
+        </div>
+      `).join('') : '<p style="color:var(--grey);">Пока нет отзывов.</p>';
+    } catch(e) {}
+  }
+  loadMainReviews();
 
   const closeAllModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
   document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', closeAllModals));
@@ -307,15 +334,26 @@
 
   function logout() { localStorage.removeItem('kanjo_token'); authToken = null; updateAuthUI(); document.getElementById('profile-modal').classList.remove('open'); showToast('Вы вышли из системы', 'success'); }
   document.getElementById('logout-btn').addEventListener('click', logout);
-  document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); });
+  document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); loadUserReviews(); });
 
-  document.getElementById('tab-btn-bookings').addEventListener('click', (e) => {
-    e.target.classList.add('active'); document.getElementById('tab-btn-builds').classList.remove('active');
-    document.getElementById('profile-tab-bookings').style.display = 'block'; document.getElementById('profile-tab-builds').style.display = 'none';
-  });
-  document.getElementById('tab-btn-builds').addEventListener('click', (e) => {
-    e.target.classList.add('active'); document.getElementById('tab-btn-bookings').classList.remove('active');
-    document.getElementById('profile-tab-bookings').style.display = 'none'; document.getElementById('profile-tab-builds').style.display = 'block';
+  // Вкладки ЛК
+  const tabsList = document.querySelectorAll('.auth-tabs .auth-tab');
+  tabsList.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      tabsList.forEach(t => t.classList.remove('active'));
+      e.target.classList.add('active');
+      
+      document.getElementById('profile-tab-bookings').style.display = 'none';
+      document.getElementById('profile-tab-builds').style.display = 'none';
+      document.getElementById('profile-tab-reviews').style.display = 'none';
+      
+      const targetId = e.target.id.replace('tab-btn-', 'profile-tab-');
+      document.getElementById(targetId).style.display = 'block';
+      
+      if (targetId === 'profile-tab-bookings') loadBookings();
+      if (targetId === 'profile-tab-builds') loadBuilds();
+      if (targetId === 'profile-tab-reviews') loadUserReviews();
+    });
   });
 
   async function loadBookings() {
@@ -362,6 +400,43 @@
       loadBuilds(); showToast('Сборка удалена', 'success');
     });
   };
+
+  // ОТЗЫВЫ В ЛК
+  async function loadUserReviews() {
+    const list = document.getElementById('profile-reviews-list'); if (!list) return;
+    list.innerHTML = 'Загрузка...';
+    const res = await fetch('/api/reviews'); const allReviews = await res.json();
+    // Фильтруем по имени (упрощенно, так как user_id привязан к отзыву)
+    const userReviews = allReviews.filter(r => r.name === currentUser?.name);
+    
+    list.innerHTML = userReviews.length ? userReviews.map(r => `
+      <div class="profile-card">
+        <div class="profile-card-info">
+          <h4>${r.name} <span style="color:var(--red); font-size:14px;">${'★'.repeat(r.rating)}</span></h4>
+          <p>${r.text}</p>
+        </div>
+      </div>
+    `).join('') : '<p>Вы пока не оставляли отзывов.</p>';
+  }
+
+  document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
+    const text = document.getElementById('review-text').value;
+    const rating = document.getElementById('review-rating').value;
+    if (!text) return showToast('Напишите текст отзыва', 'error');
+    
+    try {
+      const res = await fetch('/api/user/reviews', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ text, rating })
+      });
+      if (res.ok) {
+        showToast('Спасибо за отзыв!', 'success');
+        document.getElementById('review-text').value = '';
+        loadUserReviews();
+        loadMainReviews();
+      }
+    } catch (err) { showToast('Ошибка отправки', 'error'); }
+  });
 
   const handleForm = async (e) => {
     e.preventDefault(); if (!validateForm(e.target)) return;
@@ -424,7 +499,6 @@
     }
   });
 
-  // ИСПРАВЛЕНИЕ 4: Кнопка "Заказать" в модалке услуги
   document.getElementById('btn-order-service').addEventListener('click', () => {
     const srvName = document.getElementById('srv-title').textContent;
     closeAllModals();
@@ -489,7 +563,9 @@
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && authToken) {
       loadProfile();
-      if (document.getElementById('profile-modal').classList.contains('open')) { loadBookings(); loadBuilds(); }
+      if (document.getElementById('profile-modal').classList.contains('open')) { 
+        loadBookings(); loadBuilds(); loadUserReviews(); 
+      }
     }
   });
 

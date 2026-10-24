@@ -56,6 +56,11 @@ async function initDB() {
       id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
     )`);
 
+    // НОВАЯ ТАБЛИЦА ОТЗЫВОВ
+    await pool.query(`CREATE TABLE IF NOT EXISTS reviews (
+      id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -78,12 +83,20 @@ async function initDB() {
 }
 initDB();
 
-async function sendTelegramMessage(text) {
+async function sendTelegramMessage(text, bookingId) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
+    const body = { chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'Markdown' };
+    if (bookingId) {
+      body.reply_markup = {
+        inline_keyboard: [[
+          { text: '✅ Выполнено', callback_data: `done_${bookingId}` },
+          { text: '💬 Написать', url: 'https://t.me/Bool2Dr' }
+        ]]
+      };
+    }
     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'Markdown' })
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
     });
   } catch (error) { }
 }
@@ -106,13 +119,11 @@ app.post('/api/auth/register', async (req, res) => {
       else {
         await pool.query(`UPDATE users SET password_hash = $1, name = $2, phone = $3, verification_code = $4 WHERE email = $5`, [hash, name, phone, code, email]);
         res.status(201).json({ message: 'Новый код отправлен', email, code });
-        console.log(`[AUTH] Новый код для ${email}: ${code}`);
         return;
       }
     }
     await pool.query(`INSERT INTO users (email, password_hash, name, phone, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, FALSE)`, [email, hash, name, phone, code]);
     res.status(201).json({ message: 'Код отправлен', email, code });
-    console.log(`[AUTH] Код подтверждения для ${email}: ${code}`);
   } catch (err) { if (!res.headersSent) res.status(500).json({ error: err.message }); }
 });
 
@@ -151,7 +162,6 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const hash = await bcrypt.hash(newPass, 10);
     await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [hash, email]);
     res.json({ message: `Новый пароль: ${newPass}`, pass: newPass });
-    console.log(`[AUTH] Новый пароль для ${email}: ${newPass}`);
   } catch (err) { if (!res.headersSent) res.status(500).json({ error: err.message }); }
 });
 
@@ -164,27 +174,42 @@ app.get('/api/user/profile', authMiddleware, async (req, res) => {
 app.get('/api/cars', async (req, res) => { const r = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(r.rows); });
 app.get('/api/services', async (req, res) => { const r = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(r.rows); });
 
-// ИСПРАВЛЕНИЕ: Кастомный обработчик для Rate Limit (всегда JSON)
+// --- ОТЗЫВЫ ---
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
+    res.json(r.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/user/reviews', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  const { text, rating } = req.body;
+  if (!text || !rating) return res.status(400).json({ error: 'Заполните все поля' });
+  try {
+    const user = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.userId]);
+    await pool.query(
+      `INSERT INTO reviews (user_id, name, text, rating) VALUES ($1, $2, $3, $4)`,
+      [req.user.userId, user.rows[0].name || 'Клиент', text, parseInt(rating)]
+    );
+    res.status(201).json({ message: 'Отзыв добавлен' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 const limiter = rateLimit({
-  windowMs: 60 * 1000, 
-  max: 5,
-  handler: function (req, res, next, options) {
-    res.status(options.statusCode).json({ error: options.message.error });
-  },
+  windowMs: 60 * 1000, max: 5,
+  handler: function (req, res, next, options) { res.status(options.statusCode).json({ error: options.message.error }); },
   message: { error: 'Слишком много запросов. Подождите минуту.' }
 });
 
 app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   let { name, phone, car, price } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
-  
   const userId = req.user ? req.user.userId : null;
   
   if (userId) {
     const checkDup = await pool.query(`SELECT * FROM bookings WHERE user_id = $1 AND car = $2 AND status != 'Отменена'`, [userId, car]);
-    if (checkDup.rows.length > 0) {
-      return res.status(400).json({ error: 'У вас уже есть активная заявка на эту машину/услугу.' });
-    }
+    if (checkDup.rows.length > 0) return res.status(400).json({ error: 'У вас уже есть активная заявка на это.' });
   }
 
   let finalPrice = parseInt(price) || null;
@@ -199,9 +224,10 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   }
 
   try {
-    await pool.query(`INSERT INTO bookings (name, phone, car, user_id, price) VALUES ($1, $2, $3, $4, $5)`, [name, phone, car, userId, finalPrice]);
+    const result = await pool.query(`INSERT INTO bookings (name, phone, car, user_id, price) VALUES ($1, $2, $3, $4, $5) RETURNING id`, [name, phone, car, userId, finalPrice]);
+    const bookingId = result.rows[0].id;
     res.status(201).json({ message: 'Заявка принята' });
-    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`);
+    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -247,18 +273,14 @@ const adminAuth = basicAuth({ users: { [process.env.ADMIN_USER || 'admin']: proc
 app.get('/admin', adminAuth, (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')); });
 app.get('/api/admin/bookings', adminAuth, async (req, res) => { const r = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(r.rows); });
 app.put('/api/admin/bookings/:id/status', adminAuth, async (req, res) => { await pool.query(`UPDATE bookings SET status = $1 WHERE id = $2`, [req.body.status, req.params.id]); res.json({ message: 'OK' }); });
-app.delete('/api/admin/bookings/:id', adminAuth, async (req, res) => {
-  try {
-    await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]);
-    res.json({ message: 'Заявка удалена' });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
+app.delete('/api/admin/bookings/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]); res.json({ message: 'Заявка удалена' }); });
 app.get('/api/admin/clients', adminAuth, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
 app.delete('/api/admin/clients/:id', adminAuth, async (req, res) => {
   try {
     const clientId = req.params.id;
     await pool.query('DELETE FROM bookings WHERE user_id = $1', [clientId]);
     await pool.query('DELETE FROM saved_builds WHERE user_id = $1', [clientId]);
+    await pool.query('DELETE FROM reviews WHERE user_id = $1', [clientId]);
     await pool.query('DELETE FROM users WHERE id = $1', [clientId]);
     res.json({ message: 'Client deleted' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -270,5 +292,33 @@ app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => { await pool.qu
 app.post('/api/admin/services', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1,$2,$3,$4,$5,$6)`, [num, title, short, full_description, works, price]); res.status(201).json({ message: 'OK' }); });
 app.put('/api/admin/services/:id', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`UPDATE services SET num=$1, title=$2, short=$3, full_description=$4, works=$5, price=$6 WHERE id=$7`, [num, title, short, full_description, works, price, req.params.id]); res.json({ message: 'OK' }); });
 app.delete('/api/admin/services/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM services WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });
+
+app.post('/api/telegram-webhook', async (req, res) => {
+  const { callback_query } = req.body;
+  if (!callback_query) return res.sendStatus(200);
+
+  const data = callback_query.data;
+  const chatId = callback_query.message.chat.id;
+  const messageId = callback_query.message.message_id;
+
+  if (data.startsWith('done_')) {
+    const bookingId = data.split('_')[1];
+    try {
+      await pool.query(`UPDATE bookings SET status = 'Выполнена' WHERE id = $1`, [bookingId]);
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/answerCallbackQuery`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callback_query_id: callback_query.id, text: 'Заявка выполнена!' })
+      });
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/editMessageText`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId, message_id: messageId,
+          text: callback_query.message.text + '\n\n✅ *СТАТУС: ВЫПОЛНЕНО*', parse_mode: 'Markdown'
+        })
+      });
+    } catch (err) { console.error(err); }
+  }
+  res.sendStatus(200);
+});
 
 app.listen(PORT, () => console.log(`[SERVER] Запущен на порту ${PORT}`));
