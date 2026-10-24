@@ -66,7 +66,7 @@
     input.addEventListener('blur', (e) => { if (e.target.value === '+7 (') e.target.value = ''; });
   });
 
-  /* ---------- 3. ЗВУКИ ---------- */
+  /* ---------- 3. ЗВУКИ (ДЕФОЛТНЫЙ КЛИК) ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx, isSoundOn = true;
   function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   
@@ -94,28 +94,23 @@
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
       osc.start(); osc.stop(audioCtx.currentTime + 0.25);
     }
+    // ИСПРАВЛЕНИЕ: Дефолтный приятный звук (как клик в macOS)
     else if (type === 'car') {
       const now = audioCtx.currentTime;
-      const osc1 = audioCtx.createOscillator();
-      const osc2 = audioCtx.createOscillator();
+      const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       
-      osc1.type = 'sine'; osc2.type = 'sine';
-      osc1.frequency.setValueAtTime(880, now); 
-      osc2.frequency.setValueAtTime(1108.73, now); 
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.08); // Короткий "бульк" вниз
       
-      osc1.frequency.exponentialRampToValueAtTime(440, now + 0.1);
-      osc2.frequency.exponentialRampToValueAtTime(554.37, now + 0.1);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
       
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.1, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      
-      osc1.connect(gain); osc2.connect(gain);
+      osc.connect(gain);
       gain.connect(audioCtx.destination);
-      
-      osc1.start(now); osc2.start(now);
-      osc1.stop(now + 0.3); osc2.stop(now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.1);
     }
   }
 
@@ -128,7 +123,6 @@
   /* ---------- 4. ЗАГРУЗКА ДАННЫХ И КАСТОМНЫЙ СЕЛЕКТ ---------- */
   let carsData = [], servicesData = [];
   
-  // Переменные для кастомного селекта
   let selectedCarId = null;
   let selectedCarHp = 0;
   let selectedCarPrice = 0;
@@ -141,7 +135,6 @@
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     const res = await fetch('/api/cars'); carsData = await res.json();
     
-    // Рендер галереи
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${c.img}" alt="${c.title}"><div class="gallery-item-info"><h4>${c.title}</h4><p>${c.spec}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -153,7 +146,6 @@
       });
     });
 
-    // Рендер кастомного селекта
     if (optionsContainer && carsData.length > 0) {
       optionsContainer.innerHTML = carsData.map(c => `
         <div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">
@@ -161,7 +153,6 @@
         </div>
       `).join('');
 
-      // Обработчик выбора
       document.querySelectorAll('.select-option').forEach(opt => {
         opt.addEventListener('click', () => {
           selectedText.textContent = opt.textContent;
@@ -173,7 +164,6 @@
         });
       });
 
-      // Инициализация первой машины
       const firstOpt = document.querySelector('.select-option');
       if (firstOpt) {
         selectedText.textContent = firstOpt.textContent;
@@ -185,14 +175,12 @@
     }
   }
 
-  // Открытие/закрытие кастомного селекта
   if (selectTrigger) {
     selectTrigger.addEventListener('click', (e) => {
       e.stopPropagation();
       customSelect.classList.toggle('open');
     });
     
-    // Закрытие при клике вне селекта
     document.addEventListener('click', (e) => {
       if (!customSelect.contains(e.target)) {
         customSelect.classList.remove('open');
@@ -438,7 +426,6 @@
   document.getElementById('booking-form').addEventListener('submit', handleForm);
   document.getElementById('inline-booking-form').addEventListener('submit', handleForm);
 
-  // Кнопка "Обсудить" в конфигураторе
   document.getElementById('btn-book-build').addEventListener('click', () => {
     const car = selectedText.textContent;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
@@ -455,7 +442,6 @@
     }
   });
 
-  // Кнопка "Хочу такую же" в модалке машины
   document.getElementById('btn-book-current-car').addEventListener('click', () => {
     const carName = document.getElementById('cm-title').textContent;
     closeAllModals();
@@ -473,7 +459,6 @@
     }
   });
 
-  // Кнопка "В Гараж"
   document.getElementById('btn-save-build').addEventListener('click', async () => {
     if (!authToken) { authModal.classList.add('open'); return; }
     const car = selectedText.textContent;
@@ -501,7 +486,7 @@
 
   document.getElementById('credits-btn').addEventListener('click', () => {
     videoModal.classList.add('open');
-    video.currentTime = 0; // Начинаем с начала
+    video.currentTime = 0;
     video.play();
     playPauseBtn.textContent = '⏸';
   });
