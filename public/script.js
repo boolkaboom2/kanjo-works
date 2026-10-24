@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+    let authToken = localStorage.getItem('kanjo_token') || null;
 
   /* ---------- 0. ПРЕЛОАДЕР (Разбудить сервер) ---------- */
   window.addEventListener('load', async () => {
@@ -388,6 +389,46 @@
     calculateConfig();
   }
 
+    // Обработка кнопки "Обсудить проект" в конфигураторе
+  const btnBookBuild = document.getElementById('btn-book-build');
+  if (btnBookBuild) {
+    btnBookBuild.addEventListener('click', () => {
+      // 1. Получаем название выбранной машины
+      const carName = baseCarSelect.options[baseCarSelect.selectedIndex].text;
+      
+      // 2. Собираем выбранные детали
+      let parts = [];
+      partsCheckboxes.forEach(cb => {
+        if (cb.checked) {
+          // Берем текст из label, убираем приписку с лошадиными силами
+          const labelText = cb.nextElementSibling.textContent.split('(')[0].trim();
+          parts.push(labelText);
+        }
+      });
+      
+      // 3. Получаем итоговую мощность
+      const totalHp = totalHpEl.textContent;
+
+      // 4. Формируем красивую строку
+      let buildText = carName;
+      if (parts.length > 0) {
+        buildText += ` + ${parts.join(' + ')}`;
+      }
+      buildText += ` (${totalHp} HP)`;
+
+      // 5. Открываем модалку и вставляем сборку в поле "Машина"
+      closeAllModals();
+      bookingModal.classList.add('open');
+      playModalSound();
+
+      // Находим поле для ввода машины в модалке
+      const modalCarInput = bookingModal.querySelectorAll('input[type="text"]')[1];
+      if (modalCarInput) {
+        modalCarInput.value = buildText;
+      }
+    });
+  }
+
   /* ---------- 8. Формы (Отправка на сервер) ---------- */
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -408,9 +449,12 @@
     btn.style.opacity = '0.7';
     
     try {
+           const headers = { 'Content-Type': 'application/json' };
+      if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
       const response = await fetch('/api/book', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headers,
         body: JSON.stringify(data)
       });
 
@@ -453,4 +497,11 @@
   /* ---------- 9. Запуск загрузки машин ---------- */
   loadCars();
 
-})();
+    // ... (код закрытия профиля)
+
+  const closeProfileBtn = document.querySelector('.close-profile');
+  if (closeProfileBtn) {
+    closeProfileBtn.addEventListener('click', () => profileModal.classList.remove('open'));
+  }
+
+})(); // <--- ВОТ ЭТА СКОБКА ДОЛЖНА БЫТЬ САМОЙ ПОСЛЕДНЕЙ

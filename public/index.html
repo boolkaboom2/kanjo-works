@@ -22,12 +22,17 @@
     <div class="header-info">
       <span>TOKYO // 35.6762° N, 139.6503° E</span>
       <span id="clock">00:00:00</span>
+      
+      <!-- НОВАЯ КНОПКА ПРОФИЛЯ -->
+      <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      </button>
+      
       <button id="sound-toggle" class="sound-btn" title="Звук вкл/выкл">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
       </button>
     </div>
   </header>
-
   <main id="scroll-container">
     
     <section class="panel hero">
@@ -105,7 +110,7 @@
             <span class="result-label">СТОИМОСТЬ ПРОЕКТА</span>
             <div class="result-price">от <span id="total-price">1 500 000</span> ₽</div>
           </div>
-          <button class="btn-racing open-booking">ОБСУДИТЬ ПРОЕКТ</button>
+          <button class="btn-racing" id="btn-book-build">ОБСУДИТЬ ПРОЕКТ</button>
         </div>
       </div>
     </section>

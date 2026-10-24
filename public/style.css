@@ -342,3 +342,42 @@ header {
   .panel-title h2 { font-size: 48px; }
   .panel-title .kanji { font-size: 32px; }
 }
+
+/* ================= АВТОРИЗАЦИЯ И ЛК ================= */
+.auth-tabs {
+  display: flex;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--border);
+}
+.auth-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--grey);
+  font-family: var(--font-display);
+  font-size: 20px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.auth-tab.active {
+  color: var(--red);
+  border-bottom: 2px solid var(--red);
+}
+
+.profile-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.3s;
+}
+.profile-card:hover {
+  border-color: var(--red);
+}
+.profile-card-info h4 { font-family: var(--font-display); font-size: 24px; margin: 0 0 5px 0; color: var(--text); }
+.profile-card-info p { color: var(--grey); font-size: 14px; margin: 0; }
+.profile-card-date { font-family: 'Courier New', monospace; font-size: 12px; color: var(--grey); }
