@@ -139,8 +139,23 @@
   }
   updateAuthUI();
 
-  document.getElementById('login-btn').addEventListener('click', () => {
+   document.getElementById('login-btn').addEventListener('click', () => {
+    // Сброс форм
+    document.getElementById('auth-form').reset();
+    document.getElementById('verify-form').reset();
+    document.getElementById('auth-step-1').style.display = 'block';
+    document.getElementById('auth-step-2').style.display = 'none';
     document.getElementById('auth-error').style.display = 'none';
+    
+    // Принудительное переключение на вкладку "Вход"
+    const loginTab = document.querySelector('.auth-tab[data-mode="login"]');
+    if (loginTab) {
+      document.querySelectorAll('.auth-tab[data-mode]').forEach(t => t.classList.remove('active'));
+      loginTab.classList.add('active');
+      document.querySelectorAll('.reg-only').forEach(el => el.style.display = 'none');
+      document.getElementById('auth-submit-btn').textContent = 'ВОЙТИ';
+    }
+    
     authModal.classList.add('open');
   });
 

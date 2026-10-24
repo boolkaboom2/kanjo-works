@@ -225,4 +225,16 @@ document.addEventListener('DOMContentLoaded', () => {
   loadClients();
   loadCars();
   loadServices();
+
+    // Автообновление каждые 5 секунд (если не открыта модалка)
+  setInterval(() => {
+    if (document.querySelector('.modal.open')) return; // Не обновляем, если открыто окно редактирования
+    
+    const activeTab = document.querySelector('.tab-btn.active').dataset.target;
+    if (activeTab === 'bookings') loadBookings();
+    if (activeTab === 'cars') loadCars();
+    if (activeTab === 'services') loadServices();
+    if (activeTab === 'clients') loadClients();
+  }, 5000);
+  
 });
