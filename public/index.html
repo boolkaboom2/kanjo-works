@@ -18,12 +18,14 @@
   <div class="noise"></div>
 
   <header>
-    <div class="logo" id="logo-btn">KANJO<span>_</span>WORKS</div>
-    <div class="header-info">
+       <div class="header-info">
       <span>TOKYO // 35.6762° N, 139.6503° E</span>
       <span id="clock">00:00:00</span>
       
-      <!-- НОВАЯ КНОПКА ПРОФИЛЯ -->
+      <!-- КНОПКА ВХОДА (видна только гостям) -->
+      <button id="login-btn" class="btn-racing" style="padding: 8px 16px; font-size: 14px;">ВОЙТИ</button>
+
+      <!-- КНОПКА ПРОФИЛЯ (видна только авторизованным) -->
       <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </button>
