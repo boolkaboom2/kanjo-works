@@ -163,6 +163,7 @@
         <div class="review-card">
           <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
           <p class="review-text">"${r.text}"</p>
+          <p style="color:var(--red); font-size:12px; margin-bottom:5px;">Заказ: ${r.target_car || 'Неизвестно'}</p>
           <span class="review-author">— ${r.name}</span>
         </div>
       `).join('') : '<p style="color:var(--grey);">Пока нет отзывов.</p>';
@@ -185,6 +186,33 @@
 
   document.getElementById('confirm-yes').addEventListener('click', () => { if (confirmCallback) confirmCallback(); confirmModal.classList.remove('open'); });
   document.getElementById('confirm-no').addEventListener('click', () => { confirmModal.classList.remove('open'); });
+
+  // МОДАЛКА ОТМЕНЫ
+  const cancelModal = document.getElementById('cancel-modal');
+  let currentCancelId = null;
+
+  window.cancelUserBooking = (id) => {
+    currentCancelId = id;
+    document.getElementById('cancel-reason-input').value = '';
+    cancelModal.classList.add('open');
+  };
+
+  document.getElementById('btn-confirm-cancel').addEventListener('click', async () => {
+    const reason = document.getElementById('cancel-reason-input').value || 'Не указана';
+    try {
+      const res = await fetch(`/api/user/bookings/${currentCancelId}/cancel`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ reason })
+      });
+      if (res.ok) { 
+        cancelModal.classList.remove('open');
+        loadBookings(); 
+        showToast('Заявка отменена', 'success'); 
+        loadProfile(); 
+      }
+    } catch (err) { showToast('Ошибка', 'error'); }
+  });
 
   const partsCbs = document.querySelectorAll('.part-row input[type="checkbox"]');
   function calculateConfig() {
@@ -360,22 +388,6 @@
     `).join('') : '<p>Нет заявок</p>';
   }
 
-  window.cancelUserBooking = async (id) => {
-    const reason = prompt('Укажите причину отмены (например: передумал, нашел дешевле, ошибся в заказе):');
-    if (reason === null) return;
-    
-    showConfirm('Вы уверены, что хотите отменить заявку?', async () => {
-      try {
-        const res = await fetch(`/api/user/bookings/${id}/cancel`, { 
-          method: 'PUT', 
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ reason: reason || 'Не указана' })
-        });
-        if (res.ok) { loadBookings(); showToast('Заявка отменена', 'success'); loadProfile(); }
-      } catch (err) { showToast('Ошибка', 'error'); }
-    });
-  };
-
   async function loadBuilds() {
     const list = document.getElementById('profile-builds-list'); list.innerHTML = 'Загрузка...';
     const res = await fetch('/api/user/builds', { headers: { 'Authorization': `Bearer ${authToken}` } });
@@ -416,7 +428,8 @@
 
   async function loadUserReviews() {
     const list = document.getElementById('profile-reviews-list'); 
-    const formContainer = document.getElementById('profile-tab-reviews').querySelector('div');
+    const formContainer = document.getElementById('review-form-container');
+    const select = document.getElementById('review-booking-select');
     
     list.innerHTML = 'Загрузка...';
     
@@ -428,11 +441,11 @@
     const userReviews = allReviews.filter(r => r.name === currentUser?.name);
 
     const completedBookings = bookings.filter(b => b.status === 'Выполнена');
-    const unreviewedBooking = completedBookings.find(b => !userReviews.some(r => r.booking_id === b.id));
+    const unreviewedBookings = completedBookings.filter(b => !userReviews.some(r => r.booking_id === b.id));
 
-    if (unreviewedBooking) {
+    if (unreviewedBookings.length > 0) {
       formContainer.style.display = 'block';
-      formContainer.dataset.bookingId = unreviewedBooking.id; 
+      select.innerHTML = unreviewedBookings.map(b => `<option value="${b.id}">${b.car}</option>`).join('');
     } else {
       formContainer.style.display = 'none'; 
     }
@@ -441,6 +454,7 @@
       <div class="profile-card">
         <div class="profile-card-info">
           <h4>${r.name} <span style="color:var(--red); font-size:14px;">${'★'.repeat(r.rating)}</span></h4>
+          <p style="font-size:12px; color:var(--red); margin-bottom:5px;">Работа: ${r.target_car || 'Неизвестно'}</p>
           <p>${r.text}</p>
         </div>
       </div>
@@ -449,8 +463,7 @@
 
   document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
     const text = document.getElementById('review-text').value;
-    const formContainer = document.getElementById('profile-tab-reviews').querySelector('div');
-    const bookingId = formContainer.dataset.bookingId;
+    const bookingId = document.getElementById('review-booking-select').value;
 
     if (!text) return showToast('Напишите текст отзыва', 'error');
     if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');

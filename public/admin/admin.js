@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     newNoBtn.addEventListener('click', () => modal.classList.remove('open'));
   }
 
-  // --- 1. ЗАЯВКИ ---
   async function loadBookings() {
     const tbody = document.getElementById('bookings-list');
     try {
@@ -68,7 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // --- 2. КЛИЕНТЫ ---
   async function loadClients() {
     const tbody = document.getElementById('clients-list');
     try {
@@ -94,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // --- 3. МАШИНЫ ---
   const carModal = document.getElementById('car-modal');
   const carForm = document.getElementById('car-form');
   let allCars = [];
@@ -172,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCars();
   });
 
-  // --- 4. УСЛУГИ ---
   const srvModal = document.getElementById('service-modal');
   const srvForm = document.getElementById('service-form');
   let allServices = [];
@@ -241,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
   });
 
-  // --- 5. ОТЗЫВЫ ---
   async function loadReviews() {
     const tbody = document.getElementById('reviews-list');
     try {
@@ -252,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${r.id}</td>
           <td>${r.name}</td>
           <td style="color:var(--red);">${'★'.repeat(r.rating)}</td>
+          <td style="color:var(--grey); font-size:12px;">${r.target_car || '-'}</td>
           <td>${r.text}</td>
           <td>${new Date(r.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteReview(${r.id})">Удалить</span></td>
@@ -267,14 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // Инициализация
-  loadBookings();
-  loadClients();
-  loadCars();
-  loadServices();
-  loadReviews();
+  loadBookings(); loadClients(); loadCars(); loadServices(); loadReviews();
 
-  // Автообновление
   setInterval(() => {
     if (document.querySelector('.modal.open')) return; 
     const activeTab = document.querySelector('.tab-btn.active').dataset.target;

@@ -43,7 +43,7 @@ async function initDB() {
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новая'`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS price INTEGER`);
-    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason TEXT`); // НОВОЕ ПОЛЕ
+    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason TEXT`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS saved_builds (
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), car_name VARCHAR(255), build_text TEXT, total_hp INTEGER, total_price INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -60,7 +60,7 @@ async function initDB() {
     await pool.query(`CREATE TABLE IF NOT EXISTS reviews (
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
-    await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`); // НОВОЕ ПОЛЕ
+    await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
 
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
@@ -175,9 +175,15 @@ app.get('/api/user/profile', authMiddleware, async (req, res) => {
 app.get('/api/cars', async (req, res) => { const r = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(r.rows); });
 app.get('/api/services', async (req, res) => { const r = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(r.rows); });
 
+// ОТЗЫВЫ С НАЗВАНИЕМ МАШИНЫ
 app.get('/api/reviews', async (req, res) => {
   try {
-    const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
+    const r = await pool.query(`
+      SELECT r.*, b.car as target_car 
+      FROM reviews r 
+      LEFT JOIN bookings b ON r.booking_id = b.id 
+      ORDER BY r.created_at DESC
+    `);
     res.json(r.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -188,11 +194,9 @@ app.post('/api/user/reviews', authMiddleware, async (req, res) => {
   if (!text || !rating || !booking_id) return res.status(400).json({ error: 'Заполните все поля' });
   
   try {
-    // 1. Проверяем, что заказ принадлежит юзеру и выполнен
     const checkBooking = await pool.query(`SELECT * FROM bookings WHERE id = $1 AND user_id = $2 AND status = 'Выполнена'`, [booking_id, req.user.userId]);
     if (checkBooking.rows.length === 0) return res.status(400).json({ error: 'Можно оставлять отзыв только на выполненные заказы' });
     
-    // 2. Проверяем, нет ли уже отзыва на этот заказ
     const checkReview = await pool.query(`SELECT * FROM reviews WHERE booking_id = $1`, [booking_id]);
     if (checkReview.rows.length > 0) return res.status(400).json({ error: 'Вы уже оставили отзыв на этот заказ' });
 
@@ -296,7 +300,15 @@ app.delete('/api/admin/clients/:id', adminAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/admin/reviews', adminAuth, async (req, res) => { const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC'); res.json(r.rows); });
+app.get('/api/admin/reviews', adminAuth, async (req, res) => {
+  const r = await pool.query(`
+    SELECT r.*, b.car as target_car 
+    FROM reviews r 
+    LEFT JOIN bookings b ON r.booking_id = b.id 
+    ORDER BY r.created_at DESC
+  `);
+  res.json(r.rows);
+});
 app.delete('/api/admin/reviews/:id', adminAuth, async (req, res) => {
   try {
     await pool.query(`DELETE FROM reviews WHERE id = $1`, [req.params.id]);
