@@ -62,10 +62,8 @@ header {
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: transform;
-  overflow: hidden; /* Жестко обрезаем всё, что выходит за рамки панели */
+  /* overflow: hidden; <--- УДАЛИТЬ ЭТУ СТРОКУ */
 }
-.panel-title h2 { font-family: var(--font-display); font-size: 96px; line-height: 0.9; margin: 0; letter-spacing: 0.02em; }
-.panel-title .kanji { font-family: var(--font-jp); font-size: 48px; color: var(--red); display: block; margin-top: 10px; }
 
 /* ================= ГЛАВНАЯ ================= */
 .hero { width: 100vw; display: flex; align-items: center; padding-left: 10vw; }
@@ -112,7 +110,7 @@ header {
 
 /* ================= ГАЛЕРЕЯ ================= */
 .gallery { 
-  width: 100vw; 
+  width: max-content; /* Панель растянется под ширину всех 5 машин */
   display: flex; 
   flex-direction: column; 
   justify-content: center; 
