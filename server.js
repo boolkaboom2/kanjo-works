@@ -40,9 +40,21 @@ async function initDB() {
       id SERIAL PRIMARY KEY, name VARCHAR(255), phone VARCHAR(50), car VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     
-    // Добавляем связь с пользователем и СТАТУС
+    // Добавляем поля для юзера, статуса и цены
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новая'`);
+    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS price INTEGER`);
+
+    // Таблица сохраненных сборок
+    await pool.query(`CREATE TABLE IF NOT EXISTS saved_builds (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      car_name VARCHAR(255),
+      build_text TEXT,
+      total_hp INTEGER,
+      total_price INTEGER,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS cars (
       id SERIAL PRIMARY KEY, title VARCHAR(255), spec VARCHAR(255), img VARCHAR(255),
@@ -53,7 +65,6 @@ async function initDB() {
       id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
     )`);
     
-    // Заполнение дефолтными данными (если база пустая)
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -133,28 +144,34 @@ app.post('/api/auth/login', async (req, res) => {
 
 // --- ПУБЛИЧНОЕ API ---
 app.get('/api/cars', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM cars ORDER BY id ASC');
-    res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  try { const result = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(result.rows); } 
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/services', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM services ORDER BY id ASC');
-    res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  try { const result = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(result.rows); } 
+  catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-const limiter = rateLimit({ windowMs: 60 * 1000, max: 3 });
+const limiter = rateLimit({ windowMs: 60 * 1000, max: 5 });
 app.post('/api/book', limiter, authMiddleware, async (req, res) => {
-  let { name, phone, car } = req.body;
+  let { name, phone, car, price } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
+  
   const userId = req.user ? req.user.userId : null;
+  let finalPrice = parseInt(price) || null;
+  let discountText = '';
+
+  // Применяем скидку 5%, если есть цена и юзер авторизован
+  if (userId && finalPrice) {
+    finalPrice = Math.round(finalPrice * 0.95);
+    discountText = '\n💸 *Скидка 5% (Авторизован)*';
+  }
+
   try {
-    await pool.query(`INSERT INTO bookings (name, phone, car, user_id) VALUES ($1, $2, $3, $4)`, [name, phone, car, userId]);
+    await pool.query(`INSERT INTO bookings (name, phone, car, user_id, price) VALUES ($1, $2, $3, $4, $5)`, [name, phone, car, userId, finalPrice]);
     res.status(201).json({ message: 'Заявка принята' });
-    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}`);
+    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -166,15 +183,34 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- СОХРАНЕННЫЕ СБОРКИ ---
+app.post('/api/user/save-build', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  const { car_name, build_text, total_hp, total_price } = req.body;
+  try {
+    await pool.query(
+      `INSERT INTO saved_builds (user_id, car_name, build_text, total_hp, total_price) VALUES ($1, $2, $3, $4, $5)`,
+      [req.user.userId, car_name, build_text, total_hp, total_price]
+    );
+    res.status(201).json({ message: 'Сборка сохранена' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/user/builds', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  try {
+    const result = await pool.query('SELECT * FROM saved_builds WHERE user_id = $1 ORDER BY created_at DESC', [req.user.userId]);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // --- АДМИН ПАНЕЛЬ ---
 const adminAuth = basicAuth({
   users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
   challenge: true,
 });
 
-app.get('/admin', adminAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
-});
+app.get('/admin', adminAuth, (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')); });
 
 app.get('/api/admin/bookings', adminAuth, async (req, res) => {
   const result = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC');

@@ -84,7 +84,7 @@
     setInterval(() => { clockEl.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`; }, 1000);
   }
 
-  /* ---------- 3. СКРОЛЛ И ПАНЕЛИ ---------- */
+  /* ---------- 3. СКРОЛЛ ---------- */
   const container = document.getElementById('scroll-container');
   const logoBtn = document.getElementById('logo-btn');
   
@@ -119,7 +119,7 @@
     if (logoBtn) logoBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
-  /* ---------- 4. БАЗА ДАННЫХ (СЕРВЕР) ---------- */
+  /* ---------- 4. БАЗА ДАННЫХ ---------- */
   let carsData = [];
   let servicesData = [];
 
@@ -130,7 +130,6 @@
       const res = await fetch('/api/cars');
       carsData = await res.json();
       
-      // 1. Рендерим карточки в галерею
       galleryGrid.innerHTML = carsData.map((car, index) => `
         <div class="gallery-item" data-index="${index}">
           <img src="${car.img}" alt="${car.title}">
@@ -139,23 +138,17 @@
       `).join('');
       attachCarClickEvents();
 
-      // 2. Рендерим выпадающий список в конфигураторе
+      // Рендер выпадающего списка
       const baseCarSelect = document.getElementById('base-car');
       if (baseCarSelect) {
         baseCarSelect.innerHTML = carsData.map(car => {
-          // Извлекаем цифры мощности (например, из "450 HP" берем 450)
           const hpNum = parseInt(car.hp) || 200; 
-          // Так как цены в базе машин нет, ставим базовую цену проекта (например, 1.5 млн)
           const basePrice = 1500000; 
-          
           return `<option value="${car.id}" data-hp="${hpNum}" data-price="${basePrice}">${car.title}</option>`;
         }).join('');
-        
-        // Пересчитываем калькулятор с новыми данными
         calculateConfig(); 
       }
-
-    } catch (err) { console.error('Ошибка загрузки машин:', err); }
+    } catch (err) { console.error(err); }
   }
 
   async function loadServices() {
@@ -243,9 +236,41 @@
       let parts = [];
       partsCheckboxes.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
       let buildText = carName + (parts.length ? ` + ${parts.join(' + ')}` : '') + ` (${totalHpEl.textContent} HP)`;
+      
       closeAllModals(); bookingModal.classList.add('open'); playModalSound();
+      
+      // Заполняем название и цену
       const modalCarInput = bookingModal.querySelectorAll('input[type="text"]')[1];
       if (modalCarInput) modalCarInput.value = buildText;
+      
+      const priceVal = parseInt(totalPriceEl.textContent.replace(/\s/g, ''));
+      const hiddenPrice = bookingModal.querySelector('.booking-price-input');
+      if (hiddenPrice) hiddenPrice.value = priceVal;
+    });
+  }
+
+  const btnSaveBuild = document.getElementById('btn-save-build');
+  if (btnSaveBuild) {
+    btnSaveBuild.addEventListener('click', async () => {
+      if (!authToken) { authModal.classList.add('open'); return; }
+      const carName = baseCarSelect.options[baseCarSelect.selectedIndex].text;
+      const parts = [];
+      partsCheckboxes.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
+      const buildText = parts.length ? parts.join(' + ') : 'Сток';
+      const totalHp = parseInt(totalHpEl.textContent);
+      const totalPrice = parseInt(totalPriceEl.textContent.replace(/\s/g, ''));
+
+      try {
+        const res = await fetch('/api/user/save-build', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ car_name: carName, build_text: buildText, total_hp: totalHp, total_price: totalPrice })
+        });
+        if (res.ok) {
+          btnSaveBuild.textContent = 'СОХРАНЕНО!';
+          setTimeout(() => btnSaveBuild.textContent = 'В ГАРАЖ', 2000);
+        }
+      } catch (err) { console.error(err); }
     });
   }
 
@@ -271,13 +296,11 @@
   }
   updateAuthUI();
 
-  if (loginBtn && authModal) {
-    loginBtn.addEventListener('click', () => { authModal.classList.add('open'); });
-  }
+  if (loginBtn && authModal) loginBtn.addEventListener('click', () => authModal.classList.add('open'));
 
-  document.querySelectorAll('.auth-tab').forEach(tab => {
+  document.querySelectorAll('.auth-tab[data-mode]').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.auth-tab[data-mode]').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       isLoginMode = tab.dataset.mode === 'login';
       authSubmitBtn.textContent = isLoginMode ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ';
@@ -301,15 +324,11 @@
         if (!res.ok) throw new Error(data.error || 'Ошибка');
         authToken = data.token;
         localStorage.setItem('kanjo_token', authToken);
-        updateAuthUI();
-        authModal.classList.remove('open');
-        authForm.reset();
+        updateAuthUI(); authModal.classList.remove('open'); authForm.reset();
       } catch (err) {
-        authError.textContent = err.message;
-        authError.style.display = 'block';
+        authError.textContent = err.message; authError.style.display = 'block';
       } finally {
-        authSubmitBtn.textContent = isLoginMode ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ';
-        authSubmitBtn.disabled = false;
+        authSubmitBtn.textContent = isLoginMode ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'; authSubmitBtn.disabled = false;
       }
     });
   }
@@ -317,42 +336,83 @@
   if (profileBtn && profileModal) {
     profileBtn.addEventListener('click', async () => {
       profileModal.classList.add('open');
-      const list = document.getElementById('profile-bookings-list');
-      list.innerHTML = '<p style="color:var(--grey);">Загрузка...</p>';
-      try {
-        const res = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
-        if (res.status === 401) { localStorage.removeItem('kanjo_token'); authToken = null; updateAuthUI(); profileModal.classList.remove('open'); return; }
-        const bookings = await res.json();
-        if (bookings.length === 0) { list.innerHTML = '<p style="color:var(--grey);">У вас пока нет заявок.</p>'; return; }
-              list.innerHTML = bookings.map(b => {
-          // Определяем класс для цвета статуса
-          let statusClass = 'status-new';
-          if (b.status === 'В работе') statusClass = 'status-work';
-          if (b.status === 'Выполнена') statusClass = 'status-done';
+      loadProfileBookings();
+      loadProfileBuilds();
+    });
+  }
 
-          return `
+  // Переключение вкладок в ЛК
+  const tabBookings = document.getElementById('tab-btn-bookings');
+  const tabBuilds = document.getElementById('tab-btn-builds');
+  if (tabBookings && tabBuilds) {
+    tabBookings.addEventListener('click', () => {
+      tabBookings.classList.add('active'); tabBuilds.classList.remove('active');
+      document.getElementById('profile-tab-bookings').style.display = 'block';
+      document.getElementById('profile-tab-builds').style.display = 'none';
+    });
+    tabBuilds.addEventListener('click', () => {
+      tabBuilds.classList.add('active'); tabBookings.classList.remove('active');
+      document.getElementById('profile-tab-bookings').style.display = 'none';
+      document.getElementById('profile-tab-builds').style.display = 'block';
+    });
+  }
+
+  async function loadProfileBookings() {
+    const list = document.getElementById('profile-bookings-list');
+    list.innerHTML = '<p style="color:var(--grey);">Загрузка...</p>';
+    try {
+      const res = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
+      if (res.status === 401) { logout(); return; }
+      const bookings = await res.json();
+      if (bookings.length === 0) { list.innerHTML = '<p style="color:var(--grey);">У вас пока нет заявок.</p>'; return; }
+      
+      list.innerHTML = bookings.map(b => {
+        let statusClass = b.status === 'В работе' ? 'status-work' : (b.status === 'Выполнена' ? 'status-done' : 'status-new');
+        return `
           <div class="profile-card">
             <div class="profile-card-info">
               <h4>${b.car}</h4>
-              <p>Имя: ${b.name} | Тел: ${b.phone}</p>
+              <p>Имя: ${b.name} | Тел: ${b.phone} ${b.price ? `| Цена: ${b.price} ₽` : ''}</p>
             </div>
             <div style="text-align: right;">
               <div class="status-badge ${statusClass}">${b.status || 'Новая'}</div>
               <div class="profile-card-date">${new Date(b.created_at).toLocaleString('ru-RU')}</div>
             </div>
           </div>
-        `}).join('');
-      } catch (err) { list.innerHTML = '<p style="color:red;">Ошибка загрузки</p>'; }
-    });
+        `;
+      }).join('');
+    } catch (err) { list.innerHTML = '<p style="color:red;">Ошибка загрузки</p>'; }
+  }
+
+  async function loadProfileBuilds() {
+    const list = document.getElementById('profile-builds-list');
+    list.innerHTML = '<p style="color:var(--grey);">Загрузка...</p>';
+    try {
+      const res = await fetch('/api/user/builds', { headers: { 'Authorization': `Bearer ${authToken}` } });
+      const builds = await res.json();
+      if (builds.length === 0) { list.innerHTML = '<p style="color:var(--grey);">В гараже пусто. Соберите свою легенду!</p>'; return; }
+      
+      list.innerHTML = builds.map(b => `
+        <div class="profile-card" style="border-color: #333;">
+          <div class="profile-card-info">
+            <h4 style="color: var(--red);">${b.car_name}</h4>
+            <p style="margin-bottom: 5px;">${b.build_text}</p>
+            <p><strong>Мощность:</strong> ${b.total_hp} HP</p>
+            <p><strong>Стоимость:</strong> ${b.total_price} ₽</p>
+          </div>
+          <div class="profile-card-date">${new Date(b.created_at).toLocaleString('ru-RU')}</div>
+        </div>
+      `).join('');
+    } catch (err) { list.innerHTML = '<p style="color:red;">Ошибка загрузки</p>'; }
+  }
+
+  function logout() {
+    localStorage.removeItem('kanjo_token'); authToken = null; updateAuthUI(); profileModal.classList.remove('open');
   }
 
   const logoutBtn = document.getElementById('logout-btn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('kanjo_token');
-      authToken = null; updateAuthUI(); profileModal.classList.remove('open');
-    });
-  }
+  if (logoutBtn) logoutBtn.addEventListener('click', logout);
+  
   const closeProfileBtn = document.querySelector('.close-profile');
   if (closeProfileBtn) closeProfileBtn.addEventListener('click', () => profileModal.classList.remove('open'));
   const closeAuthBtn = document.querySelector('.close-auth');
@@ -366,11 +426,13 @@
     const nameInput = e.target.querySelector('input[type="text"]');
     const phoneInput = e.target.querySelector('input[type="tel"]');
     const carInput = e.target.querySelectorAll('input[type="text"]')[1];
+    const priceInput = e.target.querySelector('.booking-price-input');
     
     const data = {
       name: nameInput ? nameInput.value : 'Не указано',
       phone: phoneInput ? phoneInput.value : 'Не указан',
-      car: carInput ? carInput.value : 'Не указана'
+      car: carInput ? carInput.value : 'Не указана',
+      price: priceInput ? priceInput.value : null
     };
 
     btn.textContent = 'SENDING...'; btn.style.opacity = '0.7';

@@ -26,10 +26,8 @@
       <span>TOKYO // 35.6762° N, 139.6503° E</span>
       <span id="clock">00:00:00</span>
       
-      <!-- Кнопка входа (видна только гостям) -->
       <button id="login-btn" class="header-btn">ВОЙТИ</button>
 
-      <!-- Кнопка профиля (видна только авторизованным) -->
       <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </button>
@@ -121,7 +119,12 @@
             <span class="result-label">СТОИМОСТЬ ПРОЕКТА</span>
             <div class="result-price">от <span id="total-price">1 500 000</span> ₽</div>
           </div>
-          <button class="btn-racing" id="btn-book-build">ОБСУДИТЬ ПРОЕКТ</button>
+          
+          <!-- НОВЫЕ КНОПКИ -->
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button class="btn-racing" id="btn-book-build" style="flex: 1;">ОБСУДИТЬ</button>
+            <button class="btn-racing" id="btn-save-build" style="flex: 1; background: transparent; color: var(--text); border-color: var(--text);">В ГАРАЖ</button>
+          </div>
         </div>
       </div>
     </section>
@@ -153,6 +156,7 @@
             <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
             <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
             <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required></div>
+            <input type="hidden" class="booking-price-input">
             <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
           </form>
         </div>
@@ -173,6 +177,7 @@
         <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
         <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
         <div class="input-group"><input type="text" placeholder="CAR MODEL" required></div>
+        <input type="hidden" class="booking-price-input">
         <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
       </form>
     </div>
@@ -227,6 +232,11 @@
         <button class="auth-tab" data-mode="register">РЕГИСТРАЦИЯ</button>
       </div>
 
+      <!-- ТЕКСТ ПРО СКИДКУ -->
+      <div style="text-align: center; margin-bottom: 20px;">
+        <p style="color: var(--red); font-size: 13px; font-weight: bold; line-height: 1.4;">Зарегистрируйтесь и получите скидку 5% на первый проект!</p>
+      </div>
+
       <form id="auth-form">
         <div class="input-group">
           <input type="email" id="auth-email" placeholder="EMAIL" required>
@@ -244,11 +254,28 @@
   <div id="profile-modal" class="modal">
     <div class="modal-content wide" style="max-width: 800px;">
       <button class="close-modal close-profile">✕</button>
+      
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0;">МОИ ПРОЕКТЫ</h2>
+        <h2 style="margin: 0;">ЛИЧНЫЙ КАБИНЕТ</h2>
         <button id="logout-btn" class="btn-racing" style="padding: 8px 16px; font-size: 16px;">ВЫЙТИ</button>
       </div>
-      <div id="profile-bookings-list" style="max-height: 60vh; overflow-y: auto;"></div>
+
+      <!-- ВКЛАДКИ ЛК -->
+      <div class="auth-tabs" style="margin-bottom: 20px;">
+        <button class="auth-tab active" id="tab-btn-bookings">МОИ ЗАЯВКИ</button>
+        <button class="auth-tab" id="tab-btn-builds">МОЙ ГАРАЖ</button>
+      </div>
+
+      <!-- СПИСОК ЗАЯВОК -->
+      <div id="profile-tab-bookings">
+        <div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div>
+      </div>
+
+      <!-- СПИСОК СБОРОК -->
+      <div id="profile-tab-builds" style="display: none;">
+        <div id="profile-builds-list" style="max-height: 50vh; overflow-y: auto;"></div>
+      </div>
+
     </div>
   </div>
 
