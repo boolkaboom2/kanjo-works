@@ -66,7 +66,7 @@
     input.addEventListener('blur', (e) => { if (e.target.value === '+7 (') e.target.value = ''; });
   });
 
-  /* ---------- 3. ЗВУКИ (ПРИЯТНЫЙ ЗВУК) ---------- */
+  /* ---------- 3. ЗВУКИ ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx, isSoundOn = true;
   function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   
@@ -94,7 +94,6 @@
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
       osc.start(); osc.stop(audioCtx.currentTime + 0.25);
     }
-    // ИСПРАВЛЕНИЕ 2: Приятный звук (двойной аккорд) вместо звука машины
     else if (type === 'car') {
       const now = audioCtx.currentTime;
       const osc1 = audioCtx.createOscillator();
@@ -102,8 +101,6 @@
       const gain = audioCtx.createGain();
       
       osc1.type = 'sine'; osc2.type = 'sine';
-      
-      // Приятный аккорд (A5 и C#6)
       osc1.frequency.setValueAtTime(880, now); 
       osc2.frequency.setValueAtTime(1108.73, now); 
       
@@ -128,11 +125,23 @@
   if (soundBtn) soundBtn.addEventListener('click', () => { isSoundOn = !isSoundOn; soundBtn.classList.toggle('muted', !isSoundOn); });
   setInterval(() => { const c = document.getElementById('clock'); if (c) c.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`; }, 1000);
 
-  /* ---------- 4. ЗАГРУЗКА ДАННЫХ ---------- */
+  /* ---------- 4. ЗАГРУЗКА ДАННЫХ И КАСТОМНЫЙ СЕЛЕКТ ---------- */
   let carsData = [], servicesData = [];
+  
+  // Переменные для кастомного селекта
+  let selectedCarId = null;
+  let selectedCarHp = 0;
+  let selectedCarPrice = 0;
+  const customSelect = document.getElementById('base-car-select');
+  const selectTrigger = document.querySelector('.select-trigger');
+  const optionsContainer = document.getElementById('base-car-options');
+  const selectedText = document.getElementById('selected-car-text');
+
   async function loadCars() {
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     const res = await fetch('/api/cars'); carsData = await res.json();
+    
+    // Рендер галереи
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${c.img}" alt="${c.title}"><div class="gallery-item-info"><h4>${c.title}</h4><p>${c.spec}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -143,9 +152,54 @@
         closeAllModals(); document.getElementById('car-modal').classList.add('open');
       });
     });
-    const baseSelect = document.getElementById('base-car');
-    if (baseSelect) { baseSelect.innerHTML = carsData.map(c => `<option value="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${c.title}</option>`).join(''); calculateConfig(); }
+
+    // Рендер кастомного селекта
+    if (optionsContainer && carsData.length > 0) {
+      optionsContainer.innerHTML = carsData.map(c => `
+        <div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">
+          ${c.title}
+        </div>
+      `).join('');
+
+      // Обработчик выбора
+      document.querySelectorAll('.select-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          selectedText.textContent = opt.textContent;
+          selectedCarId = opt.dataset.id;
+          selectedCarHp = parseInt(opt.dataset.hp);
+          selectedCarPrice = parseInt(opt.dataset.price);
+          customSelect.classList.remove('open');
+          calculateConfig();
+        });
+      });
+
+      // Инициализация первой машины
+      const firstOpt = document.querySelector('.select-option');
+      if (firstOpt) {
+        selectedText.textContent = firstOpt.textContent;
+        selectedCarId = firstOpt.dataset.id;
+        selectedCarHp = parseInt(firstOpt.dataset.hp);
+        selectedCarPrice = parseInt(firstOpt.dataset.price);
+        calculateConfig();
+      }
+    }
   }
+
+  // Открытие/закрытие кастомного селекта
+  if (selectTrigger) {
+    selectTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      customSelect.classList.toggle('open');
+    });
+    
+    // Закрытие при клике вне селекта
+    document.addEventListener('click', (e) => {
+      if (!customSelect.contains(e.target)) {
+        customSelect.classList.remove('open');
+      }
+    });
+  }
+
   async function loadServices() {
     const grid = document.getElementById('services-grid'); if (!grid) return;
     const res = await fetch('/api/services'); servicesData = await res.json();
@@ -166,20 +220,18 @@
   document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', closeAllModals));
   document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeAllModals(); }));
   
-  // Обработчик для всех кнопок "Заказать" (услуги и т.д.)
   document.querySelectorAll('.open-booking').forEach(b => b.addEventListener('click', () => { closeAllModals(); document.getElementById('booking-modal').classList.add('open'); playSound('modal'); }));
 
-  const baseCarSelect = document.getElementById('base-car');
   const partsCbs = document.querySelectorAll('.part-row input[type="checkbox"]');
+  
   function calculateConfig() {
-    if (!baseCarSelect) return;
-    const opt = baseCarSelect.options[baseCarSelect.selectedIndex]; if (!opt) return;
-    let hp = parseInt(opt.dataset.hp) || 0, price = parseInt(opt.dataset.price) || 0;
+    let hp = selectedCarHp || 0, price = selectedCarPrice || 0;
     partsCbs.forEach(cb => { if (cb.checked) { hp += parseInt(cb.dataset.hp) || 0; price += parseInt(cb.dataset.price) || 0; } });
     document.getElementById('total-hp').textContent = hp;
     document.getElementById('total-price').textContent = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   }
-  if (baseCarSelect) { baseCarSelect.addEventListener('change', calculateConfig); partsCbs.forEach(c => c.addEventListener('change', calculateConfig)); }
+  
+  partsCbs.forEach(c => c.addEventListener('change', calculateConfig));
 
   /* ---------- 6. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---------- */
   let authToken = localStorage.getItem('kanjo_token') || null;
@@ -388,7 +440,7 @@
 
   // Кнопка "Обсудить" в конфигураторе
   document.getElementById('btn-book-build').addEventListener('click', () => {
-    const car = baseCarSelect.options[baseCarSelect.selectedIndex].text;
+    const car = selectedText.textContent;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
     const text = car + (parts.length ? ` + ${parts.join(' + ')}` : '') + ` (${document.getElementById('total-hp').textContent} HP)`;
     closeAllModals(); document.getElementById('booking-modal').classList.add('open');
@@ -403,7 +455,7 @@
     }
   });
 
-  // ИСПРАВЛЕНИЕ 3: Кнопка "Хочу такую же" в модалке машины
+  // Кнопка "Хочу такую же" в модалке машины
   document.getElementById('btn-book-current-car').addEventListener('click', () => {
     const carName = document.getElementById('cm-title').textContent;
     closeAllModals();
@@ -412,10 +464,8 @@
     playSound('modal');
     const form = document.getElementById('booking-form');
     
-    // Вписываем модель машины
     form.querySelectorAll('input[type="text"]')[1].value = carName;
     
-    // Вписываем данные пользователя
     if (currentUser) {
       form.querySelector('input[type="text"]').value = currentUser.name || '';
       form.querySelector('input[type="tel"]').value = currentUser.phone || '';
@@ -426,7 +476,7 @@
   // Кнопка "В Гараж"
   document.getElementById('btn-save-build').addEventListener('click', async () => {
     if (!authToken) { authModal.classList.add('open'); return; }
-    const car = baseCarSelect.options[baseCarSelect.selectedIndex].text;
+    const car = selectedText.textContent;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
     
     try {
@@ -451,7 +501,7 @@
 
   document.getElementById('credits-btn').addEventListener('click', () => {
     videoModal.classList.add('open');
-    video.currentTime = 0; // ИСПРАВЛЕНИЕ 4: Начинаем с начала
+    video.currentTime = 0; // Начинаем с начала
     video.play();
     playPauseBtn.textContent = '⏸';
   });

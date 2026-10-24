@@ -5,7 +5,10 @@
   --font-display: 'Bebas Neue', sans-serif; --font-body: 'Inter', sans-serif; --font-jp: 'Noto Sans JP', sans-serif;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { 
+  box-sizing: border-box; 
+  -webkit-tap-highlight-color: transparent; /* Убираем синее выделение на телефоне */
+}
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--red); border-radius: 4px; }
@@ -82,11 +85,27 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .config-controls { flex: 1; }
 .config-group { margin-bottom: 40px; }
 .config-group label { display: block; font-family: var(--font-display); font-size: 24px; color: var(--red); margin-bottom: 16px; }
-.select-wrapper { position: relative; }
-.select-wrapper::after { content: '▼'; font-size: 12px; color: var(--red); position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.config-group select { width: 100%; padding: 16px; background-color: transparent !important; border: 1px solid var(--border); color: var(--text) !important; font-family: var(--font-body); font-size: 16px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
-.config-group select:focus { border-color: var(--red); }
-.config-group select option { background-color: #111 !important; color: #fff !important; }
+
+/* КАСТОМНЫЙ СЕЛЕКТ */
+.custom-select { position: relative; width: 100%; user-select: none; }
+.select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: transparent; border: 1px solid var(--border); color: var(--text); font-family: var(--font-body); font-size: 16px; cursor: pointer; transition: border-color 0.3s; }
+.custom-select.open .select-trigger { border-color: var(--red); }
+.select-arrow { font-size: 12px; color: var(--red); transition: transform 0.3s; }
+.custom-select.open .select-arrow { transform: rotate(180deg); }
+
+.select-options { 
+  position: absolute; top: calc(100% + 5px); left: 0; right: 0; 
+  background: #111; border: 1px solid var(--red); 
+  z-index: 100; max-height: 250px; overflow-y: auto; 
+  opacity: 0; pointer-events: none; transform: translateY(-10px); 
+  transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+}
+.custom-select.open .select-options { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+.select-option { padding: 16px; color: var(--text); font-size: 16px; cursor: pointer; border-bottom: 1px solid #222; transition: all 0.2s; }
+.select-option:last-child { border-bottom: none; }
+.select-option:hover { background: var(--red); color: #fff; }
+
 .part-row { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; cursor: pointer; }
 .part-row input[type="checkbox"] { appearance: none; width: 24px; height: 24px; border: 1px solid var(--border); background: transparent; cursor: pointer; position: relative; }
 .part-row input[type="checkbox"]:checked { background: var(--red); border-color: var(--red); }
@@ -181,21 +200,17 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
   position: fixed; bottom: 20px; right: 20px; z-index: 9999;
   background: rgba(255, 0, 51, 0.1); border: 1px solid var(--red); color: var(--red);
   padding: 10px 20px; font-family: var(--font-display); font-size: 16px; cursor: pointer;
-  backdrop-filter: blur(5px); 
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); /* Плавная анимация */
-  letter-spacing: 1px;
+  backdrop-filter: blur(5px); transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); letter-spacing: 1px;
 }
 #credits-btn:hover { background: var(--red); color: #fff; box-shadow: 0 0 20px var(--red); }
 #credits-btn.hidden { opacity: 0; transform: translateY(30px); pointer-events: none; }
 
-/* ================= ВИДЕОПЛЕЕР ================= */
 .video-custom-modal .modal-content {
   max-width: 1000px; padding: 0; background: #000; border: 2px solid var(--red); border-radius: 8px; overflow: hidden;
   box-shadow: 0 0 25px rgba(255, 0, 51, 0.5);
   transform: scale(0.9) translateY(20px); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
 }
 .video-custom-modal.open .modal-content { transform: scale(1) translateY(0); }
-
 .video-wrapper { position: relative; width: 100%; background: #000; overflow: hidden; }
 .video-wrapper video { width: 100%; display: block; border: none; }
 
@@ -217,6 +232,7 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .progress-bar::after { content: ''; position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; background: var(--red); border-radius: 50%; opacity: 0; transition: opacity 0.2s; }
 .progress-container:hover .progress-bar::after { opacity: 1; }
 
+/* ================= МОБИЛЬНАЯ ВЕРСИЯ ================= */
 @media (max-width: 1024px) {
   #scroll-container { display: block; height: auto; overflow: visible; }
   body { overflow-y: auto; height: auto; }
@@ -247,7 +263,8 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
   .car-modal-img { height: 250px; padding: 10px; }
   header { padding: 16px 20px; }
   .logo { font-size: 20px; }
-  .header-info { display: none; }
+  .header-info { display: flex; gap: 10px; }
+  .desktop-only { display: none; } /* Скрываем текст и часы на телефоне */
   .auth-tabs { flex-direction: column; border-bottom: none; gap: 10px; }
   .auth-tab { border: 1px solid var(--border); border-radius: 4px; }
   .auth-tab.active { border-color: var(--red); }

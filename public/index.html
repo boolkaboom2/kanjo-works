@@ -15,8 +15,8 @@
   <header>
     <div class="logo" id="logo-btn">KANJO<span>_</span>WORKS</div>
     <div class="header-info">
-      <span>TOKYO // 35.6762° N, 139.6503° E</span>
-      <span id="clock">00:00:00</span>
+      <span class="desktop-only">TOKYO // 35.6762° N, 139.6503° E</span>
+      <span id="clock" class="desktop-only">00:00:00</span>
       <button id="login-btn" class="header-btn">ВОЙТИ</button>
       <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
       <button id="sound-toggle" class="sound-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>
@@ -37,7 +37,19 @@
       <div class="panel-title"><h2>BUILD YOUR <br> LEGEND</h2><span class="kanji">チューニング</span></div>
       <div class="config-layout">
         <div class="config-controls">
-          <div class="config-group"><label>ВЫБЕРИ БАЗУ</label><div class="select-wrapper"><select id="base-car"></select></div></div>
+          <div class="config-group">
+            <label>ВЫБЕРИ БАЗУ</label>
+            <!-- КАСТОМНЫЙ СЕЛЕКТ -->
+            <div class="custom-select" id="base-car-select">
+              <div class="select-trigger">
+                <span id="selected-car-text">ЗАГРУЗКА...</span>
+                <span class="select-arrow">▼</span>
+              </div>
+              <div class="select-options" id="base-car-options">
+                <!-- Сюда JS вставит список -->
+              </div>
+            </div>
+          </div>
           <div class="config-group"><label>УСТАНОВИТЬ ДЕТАЛИ</label>
             <div class="part-row"><input type="checkbox" id="part-turbo" data-hp="150" data-price="450000"><label for="part-turbo">TURBO KIT (+150 HP)</label></div>
             <div class="part-row"><input type="checkbox" id="part-ecu" data-hp="60" data-price="120000"><label for="part-ecu">ECU TUNE (+60 HP)</label></div>
