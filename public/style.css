@@ -30,7 +30,7 @@ header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
   display: flex; justify-content: space-between; align-items: center;
   padding: 24px 40px; border-bottom: 1px solid var(--border);
-  background: rgba(10, 10, 10, 0.95);
+  background: rgba(10, 10, 10, 0.95); /* Без backdrop-filter для FPS */
 }
 .logo { font-family: var(--font-display); font-size: 28px; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s; }
 .logo:hover { opacity: 0.7; }
@@ -62,6 +62,7 @@ header {
   transform: translateZ(0);
   backface-visibility: hidden;
   will-change: transform;
+  overflow: hidden; /* Жестко обрезаем всё, что выходит за рамки панели */
 }
 .panel-title h2 { font-family: var(--font-display); font-size: 96px; line-height: 0.9; margin: 0; letter-spacing: 0.02em; }
 .panel-title .kanji { font-family: var(--font-jp); font-size: 48px; color: var(--red); display: block; margin-top: 10px; }
@@ -111,16 +112,37 @@ header {
 
 /* ================= ГАЛЕРЕЯ ================= */
 .gallery { 
-  width: 100vw; /* Уменьшили ширину, чтобы не было лишней пустоты */
+  width: 100vw; 
   display: flex; 
   flex-direction: column; 
   justify-content: center; 
   overflow: hidden; 
 }
-.gallery-grid { display: flex; gap: 40px; margin-top: 60px; height: 50vh; }
-.gallery-item { position: relative; width: 320px; height: 100%; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; transition: border-color 0.3s; }
+.gallery-grid { 
+  display: flex; 
+  gap: 40px; 
+  margin-top: 60px; 
+  height: 50vh; 
+  align-items: center; /* Выравниваем карточки по центру */
+}
+.gallery-item { 
+  position: relative; 
+  width: 320px; 
+  height: 100%; /* Карточка не может быть выше 50vh */
+  overflow: hidden; 
+  border: 1px solid var(--border); 
+  flex-shrink: 0; 
+  cursor: pointer; 
+  transition: border-color 0.3s; 
+}
 .gallery-item:hover { border-color: var(--red); }
-.gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(1.2) brightness(0.7); transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gallery-item img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; /* Картинка обрезается, но не растягивает блок */
+  filter: grayscale(100%) contrast(1.2) brightness(0.7); 
+  transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); 
+}
 .gallery-item:hover img { transform: scale(1.05); filter: grayscale(0%) contrast(1.1) brightness(1); }
 .gallery-item-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); transform: translateY(100%); transition: transform 0.3s; }
 .gallery-item:hover .gallery-item-info { transform: translateY(0); }
@@ -129,11 +151,11 @@ header {
 
 /* ================= КОНФИГУРАТОР ================= */
 .configurator { 
-  width: 70vw; /* Уменьшили ширину для аккуратности */
+  width: 70vw; 
   display: flex; 
   flex-direction: column; 
   justify-content: center; 
-  align-items: flex-start; /* Жестко прижимаем контент к левому краю */
+  align-items: flex-start; 
   overflow: hidden;
 }
 .config-layout { 
