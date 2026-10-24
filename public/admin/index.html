@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KANJO ADMIN</title>
+<link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+
+  <header>
+    <div class="logo">KANJO<span>_</span>ADMIN</div>
+    <a href="/" class="btn-back">← На сайт</a>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-target="bookings">Заявки</button>
+    <button class="tab-btn" data-target="cars">Машины</button>
+  </div>
+
+  <main>
+    <!-- ВКЛАДКА ЗАЯВОК -->
+    <section id="bookings" class="tab-content active">
+      <h2>Входящие заявки</h2>
+      <table class="admin-table">
+        <thead>
+          <tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Машина</th><th>Дата</th></tr>
+        </thead>
+        <tbody id="bookings-list">
+          <!-- Заполняется через JS -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ВКЛАДКА МАШИН -->
+    <section id="cars" class="tab-content">
+      <div class="section-header">
+        <h2>Управление машинами</h2>
+        <button class="btn-red" id="btn-add-car">+ Добавить машину</button>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr><th>ID</th><th>Фото</th><th>Название</th><th>Спек</th><th>Действия</th></tr>
+        </thead>
+        <tbody id="cars-list">
+          <!-- Заполняется через JS -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- МОДАЛКА ДОБАВЛЕНИЯ/РЕДАКТИРОВАНИЯ -->
+  <div id="car-modal" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-title">Добавить машину</h3>
+      <form id="car-form">
+        <input type="hidden" id="car-id">
+        <input type="text" id="car-title" placeholder="Название (NISSAN SILVIA)" required>
+        <input type="text" id="car-spec" placeholder="Краткий спек (SR20DET // 450HP)" required>
+        <input type="text" id="car-img" placeholder="Фото (img/car1.jpg)" required>
+        
+        <div class="grid-2">
+          <input type="text" id="car-engine" placeholder="Двигатель">
+          <input type="text" id="car-hp" placeholder="Мощность">
+          <input type="text" id="car-weight" placeholder="Масса">
+          <input type="text" id="car-drive" placeholder="Привод">
+          <input type="text" id="car-accel" placeholder="Разгон 0-100">
+        </div>
+        <textarea id="car-desc" placeholder="Описание" rows="3"></textarea>
+        
+        <div class="modal-actions">
+          <button type="button" class="btn-gray" id="btn-cancel">Отмена</button>
+          <button type="submit" class="btn-red">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

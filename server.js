@@ -26,7 +26,7 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Инициализация БД (без изменений)
+// Инициализация БД
 async function initDB() {
   try {
     await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
@@ -37,6 +37,7 @@ async function initDB() {
       engine VARCHAR(255), hp VARCHAR(255), weight VARCHAR(255), drive VARCHAR(255), accel VARCHAR(255), description TEXT
     )`);
     
+    // Если база пустая, добавляем стартовые машины
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -65,11 +66,11 @@ async function sendTelegramMessage(text) {
   } catch (error) { console.error('[TG ERROR]', error.message); }
 }
 
-// Ограничение для публичных запросов
+// Ограничение для публичных запросов (защита от спама)
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 3 });
 app.use('/api/book', limiter);
 
-// ПУБЛИЧНОЕ API
+// --- ПУБЛИЧНОЕ API ---
 app.get('/api/cars', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM cars ORDER BY id ASC');
@@ -87,7 +88,7 @@ app.post('/api/book', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- АДМИН ПАНЕЛЬ ---
+// --- АДМИН ПАНЕЛЬ (Защищено паролем) ---
 const adminAuth = basicAuth({
   users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
   challenge: true,
@@ -95,15 +96,16 @@ const adminAuth = basicAuth({
 
 // Отдаем HTML файл админки
 app.get('/admin', adminAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
 });
 
-// Защищенное API для админки
+// API для получения заявок
 app.get('/api/admin/bookings', adminAuth, async (req, res) => {
   const result = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC');
   res.json(result.rows);
 });
 
+// API для добавления машины
 app.post('/api/admin/cars', adminAuth, async (req, res) => {
   const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
   await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, 
@@ -111,6 +113,7 @@ app.post('/api/admin/cars', adminAuth, async (req, res) => {
   res.status(201).json({ message: 'Car added' });
 });
 
+// API для обновления машины
 app.put('/api/admin/cars/:id', adminAuth, async (req, res) => {
   const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
   await pool.query(
@@ -120,6 +123,7 @@ app.put('/api/admin/cars/:id', adminAuth, async (req, res) => {
   res.json({ message: 'Car updated' });
 });
 
+// API для удаления машины
 app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => {
   await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]);
   res.json({ message: 'Car deleted' });
