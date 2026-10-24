@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCars();
   loadServices();
 
-    // Автообновление каждые 5 секунд (если не открыта модалка)
+      // Автообновление админки каждые 5 секунд (если не открыта модалка)
   setInterval(() => {
     if (document.querySelector('.modal.open')) return; // Не обновляем, если открыто окно редактирования
     

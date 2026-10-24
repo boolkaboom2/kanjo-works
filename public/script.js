@@ -352,11 +352,19 @@
     } catch (err) { showToast('Ошибка сервера', 'error'); }
   });
 
-  async function loadProfile() {
+   async function loadProfile() {
     if (!authToken) return;
     try {
       const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
-      if (res.ok) { currentUser = await res.json(); } else { logout(); }
+      if (res.ok) { 
+        currentUser = await res.json(); 
+        // Проверяем заказы для скидки
+        const bookRes = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const bookings = await bookRes.json();
+        currentUser.hasOrders = bookings.length > 0;
+      } else { 
+        logout(); 
+      }
     } catch (err) { }
   }
   loadProfile();
@@ -435,10 +443,10 @@
     modal.querySelectorAll('input[type="text"]')[1].value = text;
     modal.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
     
-    if (currentUser) {
+        if (currentUser) {
       modal.querySelector('input[type="text"]').value = currentUser.name || '';
       modal.querySelector('input[type="tel"]').value = currentUser.phone || '';
-      modal.querySelector('.discount-hint').style.display = 'block';
+      modal.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
 
@@ -528,3 +536,14 @@
   });
 
 })();
+
+  // Автообновление ЛК при возврате на вкладку
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && authToken) {
+      loadProfile();
+      if (document.getElementById('profile-modal').classList.contains('open')) {
+        loadBookings();
+        loadBuilds();
+      }
+    }
+  });
