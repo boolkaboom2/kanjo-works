@@ -1,27 +1,21 @@
 (() => {
   'use strict';
 
-    /* ---------- 0. ПРЕЛОАДЕР ---------- */
-  // Показываем прелоадер, пока сервер не ответит
+  /* ---------- 0. ПРЕЛОАДЕР (Разбудить сервер) ---------- */
   window.addEventListener('load', async () => {
     try {
-      // Делаем легкий запрос к нашему API, чтобы "разбудить" Render
-      await fetch('/api/book', { 
-        method: 'HEAD',
-        cache: 'no-store' 
-      }).catch(() => {});
+      // Делаем запрос к API, чтобы Render проснулся
+      await fetch('/api/cars', { method: 'HEAD', cache: 'no-store' }).catch(() => {});
     } finally {
-      // Прячем прелоадер в любом случае (даже если ошибка сети)
       const preloader = document.getElementById('preloader');
       if (preloader) {
-        // Небольшая задержка для красоты
         setTimeout(() => {
           preloader.classList.add('hidden');
         }, 800);
       }
     }
   });
-  
+
   /* ---------- 1. АВТОМОБИЛЬНАЯ АУДИО СИСТЕМА ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   let audioCtx;
@@ -159,19 +153,13 @@
     }, 1000);
   }
 
-  /* ---------- 3. База данных ---------- */
+  /* ---------- 3. База данных (Услуги и Машины) ---------- */
+  
+  // Услуги пока остаются захардкоженными
   const servicesData = [
     { id: 'engine', num: '01', title: 'ENGINE SWAP', short: 'Установка и настройка двигателей RB, 2JZ, SR20. Полная переборка.', full: 'Мы специализируемся на свапах легендарных двигателей. Установим 2JZ-GTE в ваш кузов или соберем SR20DET с нуля на кованых поршнях.', list: ['Снятие и дефектовка старого ДВС', 'Установка нового двигателя с подрамником', 'Изготовление кастомного выхлопа', 'Настройка ЭБУ и стендовая обкатка'], price: 'от 250 000 ₽' },
     { id: 'aero', num: '02', title: 'AERO KIT', short: 'Установка обвесов. Подгонка по миллиметрам. Карбон и стеклопластик.', full: 'Аэродинамика решает всё. Установим широкие арки, агрессивные бампера и антикрыло. Работаем с оригинальными JDM-китами и карбоном.', list: ['Разметка и подрезка кузова', 'Установка расширителей арок', 'Монтаж порогов и сплиттеров', 'Покраска и финальная подгонка зазоров'], price: 'от 120 000 ₽' },
     { id: 'ecu', num: '03', title: 'ECU TUNING', short: 'Настройка топливных карт и зажигания на стенде. Максимальная отдача.', full: 'Стоковая прошивка — это ограничение. Мы настроим ваш мотор под конкретное топливо и конфигурацию железа. Полная отдача без потери ресурса.', list: ['Установка программируемого ЭБУ (Link, Haltech)', 'Установка датчиков (лямбда, давление)', 'Стендовые заезды и калибровка', 'Тест-драйв и логирование данных'], price: 'от 80 000 ₽' }
-  ];
-
-  const carsData = [
-    { title: 'NISSAN SILVIA S15', spec: 'SR20DET // 450HP', img: 'img/car1.jpg', engine: 'SR20DET (2.0L Turbo)', hp: '450 HP (Tuned)', weight: '1240 kg', drive: 'RWD', accel: '4.5 sec', desc: 'Классика дрифта. Идеальная развесовка, огромный выбор запчастей и безграничный потенциал для тюнинга.' },
-    { title: 'TOYOTA SUPRA MK4', spec: '2JZ-GTE // 800HP', img: 'img/car2.jpg', engine: '2JZ-GTE (3.0L Twin-Turbo)', hp: '800 HP (Single Turbo)', weight: '1510 kg', drive: 'RWD', accel: '3.8 sec', desc: 'Легенда. Чугунный блок 2JZ способен выдержать более 1000 л.с. без расточки. Данный проект оснащен огромной турбиной.' },
-    { title: 'MAZDA RX-7 FD3S', spec: '13B-REW // 500HP', img: 'img/car3.jpg', engine: '13B-REW (1.3L Twin-Rotor)', hp: '500 HP (Single Turbo)', weight: '1270 kg', drive: 'RWD', accel: '4.0 sec', desc: 'Роторный двигатель — это философия. Высокие обороты, уникальный звук и невероятно легкий кузов.' },
-    { title: 'HONDA NSX NA1', spec: 'C30A // 350HP', img: 'img/car4.jpg', engine: 'C30A (3.0L V6 VTEC)', hp: '350 HP (N/A Tuned)', weight: '1370 kg', drive: 'RWD', accel: '4.8 sec', desc: 'Японский суперкар, разработанный с участием Айртона Сенны. Алюминиевый кузов и атмосферный мотор.' },
-    { title: 'SUBARU IMPREZA 22B', spec: 'EJ22 // 400HP', img: 'img/car5.jpg', engine: 'EJ22 (2.2L Turbo Flat-4)', hp: '400 HP (Tuned)', weight: '1270 kg', drive: 'AWD', accel: '4.2 sec', desc: 'Один из самых редких и желанных автомобилей в истории Subaru. Широкий кузов, полный привод и турбина.' }
   ];
 
   const servicesGrid = document.getElementById('services-grid');
@@ -185,32 +173,78 @@
     `).join('');
   }
 
-  const galleryGrid = document.getElementById('gallery-grid');
-  if (galleryGrid) {
-    galleryGrid.innerHTML = carsData.map((car, index) => `
-      <div class="gallery-item" data-index="${index}">
-        <img src="${car.img}" alt="${car.title}">
-        <div class="gallery-item-info">
-          <h4>${car.title}</h4>
-          <p>${car.spec}</p>
+  // --- Загрузка МАШИН с сервера ---
+  let carsData = []; 
+
+  async function loadCars() {
+    const galleryGrid = document.getElementById('gallery-grid');
+    if (!galleryGrid) return;
+
+    try {
+      const response = await fetch('/api/cars');
+      carsData = await response.json();
+
+      galleryGrid.innerHTML = carsData.map((car, index) => `
+        <div class="gallery-item" data-index="${index}">
+          <img src="${car.img}" alt="${car.title}">
+          <div class="gallery-item-info">
+            <h4>${car.title}</h4>
+            <p>${car.spec}</p>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+
+      attachCarClickEvents();
+      checkImages();
+
+    } catch (err) {
+      console.error('Ошибка загрузки машин:', err);
+    }
   }
 
-  /* ---------- 4. Заглушки ---------- */
-  const escapeXml = s => s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
-  function placeholder(img) {
-    if (img.dataset.placeholder) return;
-    const file = escapeXml((img.getAttribute('src') || '').split('/').pop() || 'car.jpg');
-    img.dataset.placeholder = file;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000"><rect width="800" height="1000" fill="#111"/><text x="400" y="500" text-anchor="middle" font-family="monospace" font-size="24" fill="#888">${file}</text></svg>`;
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  // Обработчик кликов по машинам
+  function attachCarClickEvents() {
+    document.querySelectorAll('.gallery-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const index = item.dataset.index;
+        const car = carsData[index];
+        if (!car) return;
+
+        playCarSound();
+
+        document.getElementById('cm-img').src = car.img;
+        document.getElementById('cm-title').textContent = car.title;
+        document.getElementById('cm-spec').textContent = car.spec;
+        document.getElementById('cm-engine').textContent = car.engine;
+        document.getElementById('cm-hp').textContent = car.hp;
+        document.getElementById('cm-weight').textContent = car.weight;
+        document.getElementById('cm-drive').textContent = car.drive;
+        document.getElementById('cm-accel').textContent = car.accel;
+        document.getElementById('cm-desc').textContent = car.description;
+
+        closeAllModals();
+        carModal.classList.add('open');
+      });
+    });
   }
-  document.querySelectorAll('img').forEach(img => {
-    img.addEventListener('error', () => placeholder(img));
-    if (img.complete && img.naturalWidth === 0) placeholder(img);
-  });
+
+  /* ---------- 4. Заглушки для фото ---------- */
+  const escapeXml = s => s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+  
+  function checkImages() {
+    document.querySelectorAll('img').forEach(img => {
+      img.addEventListener('error', () => {
+        if (img.dataset.placeholder) return;
+        const file = escapeXml((img.getAttribute('src') || '').split('/').pop() || 'car.jpg');
+        img.dataset.placeholder = file;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000"><rect width="800" height="1000" fill="#111"/><text x="400" y="500" text-anchor="middle" font-family="monospace" font-size="24" fill="#888">${file}</text></svg>`;
+        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      });
+      if (img.complete && img.naturalWidth === 0) {
+         img.dispatchEvent(new Event('error'));
+      }
+    });
+  }
 
   /* ---------- 5. Кастомный плавный скролл и кнопка Home ---------- */
   const container = document.getElementById('scroll-container');
@@ -283,6 +317,7 @@
     });
   });
 
+  // Обработчик для услуг (так как они статичные, вешаем сразу)
   document.querySelectorAll('.service-card').forEach(card => {
     card.addEventListener('click', () => {
       const id = card.dataset.id;
@@ -295,29 +330,6 @@
       closeAllModals();
       serviceModal.classList.add('open');
       playServiceSound();
-    });
-  });
-
-  document.querySelectorAll('.gallery-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const index = item.dataset.index;
-      const car = carsData[index];
-      if (!car) return;
-
-      playCarSound();
-
-      document.getElementById('cm-img').src = car.img;
-      document.getElementById('cm-title').textContent = car.title;
-      document.getElementById('cm-spec').textContent = car.spec;
-      document.getElementById('cm-engine').textContent = car.engine;
-      document.getElementById('cm-hp').textContent = car.hp;
-      document.getElementById('cm-weight').textContent = car.weight;
-      document.getElementById('cm-drive').textContent = car.drive;
-      document.getElementById('cm-accel').textContent = car.accel;
-      document.getElementById('cm-desc').textContent = car.desc;
-
-      closeAllModals();
-      carModal.classList.add('open');
     });
   });
 
@@ -348,7 +360,7 @@
     calculateConfig();
   }
 
-  /* ---------- 8. ОТПРАВКА ФОРМ (С СЕРВЕРОМ) ---------- */
+  /* ---------- 8. Формы (Отправка на сервер) ---------- */
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -409,5 +421,8 @@
 
   const inlineBookingForm = document.getElementById('inline-booking-form');
   if (inlineBookingForm) inlineBookingForm.addEventListener('submit', handleFormSubmit);
+
+  /* ---------- 9. Запуск загрузки машин ---------- */
+  loadCars();
 
 })();
