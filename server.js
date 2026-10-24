@@ -26,7 +26,7 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Инициализация БД (Таблицы Заявок и Машин)
+// Инициализация БД
 async function initDB() {
   try {
     await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
@@ -46,7 +46,6 @@ async function initDB() {
       description TEXT
     )`);
 
-    // Проверяем, есть ли машины в базе. Если нет — добавляем дефолтные.
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -77,13 +76,10 @@ async function sendTelegramMessage(text) {
   } catch (error) { console.error('[TG ERROR]', error.message); }
 }
 
-// Ограничение запросов
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 3 });
 app.use('/api/book', limiter);
 
-// --- API ДЛЯ ФРОНТЕНДА ---
-
-// Получить все машины
+// API ДЛЯ ФРОНТЕНДА
 app.get('/api/cars', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM cars ORDER BY id ASC');
@@ -91,7 +87,6 @@ app.get('/api/cars', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Отправить заявку
 app.post('/api/book', async (req, res) => {
   let { name, phone, car } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
@@ -103,8 +98,7 @@ app.post('/api/book', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- АДМИН ПАНЕЛЬ ---
-
+// АДМИН ПАНЕЛЬ
 const adminAuth = basicAuth({
   users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
   challenge: true,
@@ -124,6 +118,8 @@ app.get('/admin', adminAuth, async (req, res) => {
       input, textarea, select {background:#111; color:#fff; border:1px solid #333; padding:5px; width:100%; margin-bottom:5px; font-family:monospace;}
       button {background:#ff0033; color:#fff; border:none; padding:10px 20px; cursor:pointer; font-weight:bold; margin-top:10px;}
       .grid {display:grid; grid-template-columns: 1fr 1fr; gap:20px;}
+      a {color: #ff0033; text-decoration: none;}
+      a:hover {text-decoration: underline;}
     </style></head><body>
     <h1>KANJO_WORKS // TERMINAL</h1>
     
@@ -153,18 +149,23 @@ app.get('/admin', adminAuth, async (req, res) => {
       </div>
       <div>
         <h3>Список машин</h3>
-        <table><tr><th>ID</th><th>Фото</th><th>Название</th><th>Действие</th></tr>`;
+        <table><tr><th>ID</th><th>Фото</th><th>Название</th><th>Действия</th></tr>`;
   cars.rows.forEach(c => {
     html += `<tr>
       <td>${c.id}</td><td><img src="${c.img}" width="50"></td><td>${c.title}</td>
-      <td><a href="/admin/delete-car/${c.id}" style="color:red;">УДАЛИТЬ</a></td>
+      <td>
+        <a href="/admin/edit-car/${c.id}">РЕДАКТИРОВАТЬ</a> | 
+        <a href="/admin/delete-car/${c.id}" style="color:gray;">УДАЛИТЬ</a>
+      </td>
     </tr>`;
   });
   html += `</table></div></div></body></html>`;
   res.send(html);
 });
 
-// Добавление машины
+// --- ДОБАВЛЕНИЕ, РЕДАКТИРОВАНИЕ И УДАЛЕНИЕ МАШИН ---
+
+// Добавление
 app.post('/admin/add-car', adminAuth, async (req, res) => {
   const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
   await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, 
@@ -172,9 +173,70 @@ app.post('/admin/add-car', adminAuth, async (req, res) => {
   res.redirect('/admin');
 });
 
-// Удаление машины
+// Удаление
 app.get('/admin/delete-car/:id', adminAuth, async (req, res) => {
   await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]);
+  res.redirect('/admin');
+});
+
+// Форма редактирования (GET)
+app.get('/admin/edit-car/:id', adminAuth, async (req, res) => {
+  const result = await pool.query('SELECT * FROM cars WHERE id = $1', [req.params.id]);
+  const car = result.rows[0];
+  if (!car) return res.status(404).send('Car not found');
+
+  let html = `
+    <html><head><meta charset="utf-8"><title>EDIT CAR</title>
+    <style>
+      body{background:#0a0a0a;color:#fff;font-family:monospace;padding:20px;}
+      input, textarea {background:#111; color:#fff; border:1px solid #333; padding:10px; width:100%; max-width:600px; margin-bottom:15px; font-family:monospace;}
+      button {background:#ff0033; color:#fff; border:none; padding:10px 20px; cursor:pointer; font-weight:bold;}
+      a {color: #888; text-decoration: none; margin-left: 10px;}
+    </style></head><body>
+    <h1>РЕДАКТИРОВАТЬ МАШИНУ #${car.id}</h1>
+    <form action="/admin/edit-car/${car.id}" method="POST">
+      <label>Название:</label><br>
+      <input type="text" name="title" value="${car.title}" required><br>
+      
+      <label>Краткий спек:</label><br>
+      <input type="text" name="spec" value="${car.spec}" required><br>
+      
+      <label>Фото (URL):</label><br>
+      <input type="text" name="img" value="${car.img}" required><br>
+      
+      <label>Двигатель:</label><br>
+      <input type="text" name="engine" value="${car.engine || ''}"><br>
+      
+      <label>Мощность:</label><br>
+      <input type="text" name="hp" value="${car.hp || ''}"><br>
+      
+      <label>Масса:</label><br>
+      <input type="text" name="weight" value="${car.weight || ''}"><br>
+      
+      <label>Привод:</label><br>
+      <input type="text" name="drive" value="${car.drive || ''}"><br>
+      
+      <label>Разгон:</label><br>
+      <input type="text" name="accel" value="${car.accel || ''}"><br>
+      
+      <label>Описание:</label><br>
+      <textarea name="description" rows="5">${car.description || ''}</textarea><br>
+      
+      <button type="submit">СОХРАНИТЬ</button>
+      <a href="/admin">ОТМЕНА</a>
+    </form>
+    </body></html>
+  `;
+  res.send(html);
+});
+
+// Сохранение изменений (POST)
+app.post('/admin/edit-car/:id', adminAuth, async (req, res) => {
+  const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
+  await pool.query(
+    `UPDATE cars SET title=$1, spec=$2, img=$3, engine=$4, hp=$5, weight=$6, drive=$7, accel=$8, description=$9 WHERE id=$10`,
+    [title, spec, img, engine, hp, weight, drive, accel, description, req.params.id]
+  );
   res.redirect('/admin');
 });
 
