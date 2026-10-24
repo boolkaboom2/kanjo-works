@@ -153,27 +153,52 @@
     }, 1000);
   }
 
-  /* ---------- 3. База данных (Услуги и Машины) ---------- */
+    /* ---------- 3. База данных (Услуги и Машины) ---------- */
   
-  // Услуги пока остаются захардкоженными
-  const servicesData = [
-    { id: 'engine', num: '01', title: 'ENGINE SWAP', short: 'Установка и настройка двигателей RB, 2JZ, SR20. Полная переборка.', full: 'Мы специализируемся на свапах легендарных двигателей. Установим 2JZ-GTE в ваш кузов или соберем SR20DET с нуля на кованых поршнях.', list: ['Снятие и дефектовка старого ДВС', 'Установка нового двигателя с подрамником', 'Изготовление кастомного выхлопа', 'Настройка ЭБУ и стендовая обкатка'], price: 'от 250 000 ₽' },
-    { id: 'aero', num: '02', title: 'AERO KIT', short: 'Установка обвесов. Подгонка по миллиметрам. Карбон и стеклопластик.', full: 'Аэродинамика решает всё. Установим широкие арки, агрессивные бампера и антикрыло. Работаем с оригинальными JDM-китами и карбоном.', list: ['Разметка и подрезка кузова', 'Установка расширителей арок', 'Монтаж порогов и сплиттеров', 'Покраска и финальная подгонка зазоров'], price: 'от 120 000 ₽' },
-    { id: 'ecu', num: '03', title: 'ECU TUNING', short: 'Настройка топливных карт и зажигания на стенде. Максимальная отдача.', full: 'Стоковая прошивка — это ограничение. Мы настроим ваш мотор под конкретное топливо и конфигурацию железа. Полная отдача без потери ресурса.', list: ['Установка программируемого ЭБУ (Link, Haltech)', 'Установка датчиков (лямбда, давление)', 'Стендовые заезды и калибровка', 'Тест-драйв и логирование данных'], price: 'от 80 000 ₽' }
-  ];
+  // Загрузка Услуг
+  async function loadServices() {
+    const servicesGrid = document.getElementById('services-grid');
+    if (!servicesGrid) return;
 
-  const servicesGrid = document.getElementById('services-grid');
-  if (servicesGrid) {
-    servicesGrid.innerHTML = servicesData.map(s => `
-      <div class="service-card" data-id="${s.id}">
-        <span class="num">${s.num}</span>
-        <h3>${s.title}</h3>
-        <p>${s.short}</p>
-      </div>
-    `).join('');
+    try {
+      const response = await fetch('/api/services');
+      const servicesData = await response.json();
+
+      servicesGrid.innerHTML = servicesData.map(s => `
+        <div class="service-card" data-id="${s.id}">
+          <span class="num">${s.num}</span>
+          <h3>${s.title}</h3>
+          <p>${s.short}</p>
+        </div>
+      `).join('');
+
+      // Вешаем обработчики кликов
+      document.querySelectorAll('.service-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = parseInt(card.dataset.id);
+          const srv = servicesData.find(s => s.id === id);
+          if (!srv) return;
+          
+          document.getElementById('srv-title').textContent = srv.title;
+          document.getElementById('srv-desc').textContent = srv.full_description;
+          document.getElementById('srv-price').textContent = srv.price;
+          
+          // Разбиваем строку работ на массив по переносу строки
+          const worksArray = srv.works.split('\n').filter(w => w.trim() !== '');
+          document.getElementById('srv-list').innerHTML = worksArray.map(item => `<li>${item}</li>`).join('');
+          
+          closeAllModals();
+          serviceModal.classList.add('open');
+          playServiceSound();
+        });
+      });
+
+    } catch (err) {
+      console.error('Ошибка загрузки услуг:', err);
+    }
   }
 
-  // --- Загрузка МАШИН с сервера ---
+  // Загрузка Машин
   let carsData = []; 
 
   async function loadCars() {
@@ -202,7 +227,6 @@
     }
   }
 
-  // Обработчик кликов по машинам
   function attachCarClickEvents() {
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -227,6 +251,10 @@
       });
     });
   }
+
+  // Запускаем загрузку
+  loadServices();
+  loadCars();
 
   /* ---------- 4. Заглушки для фото ---------- */
   const escapeXml = s => s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));

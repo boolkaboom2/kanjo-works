@@ -36,8 +36,11 @@ async function initDB() {
       id SERIAL PRIMARY KEY, title VARCHAR(255), spec VARCHAR(255), img VARCHAR(255),
       engine VARCHAR(255), hp VARCHAR(255), weight VARCHAR(255), drive VARCHAR(255), accel VARCHAR(255), description TEXT
     )`);
+    // Таблица услуг
+    await pool.query(`CREATE TABLE IF NOT EXISTS services (
+      id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
+    )`);
     
-    // Если база пустая, добавляем стартовые машины
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -49,6 +52,18 @@ async function initDB() {
       ];
       for (let c of initialCars) {
         await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, c);
+      }
+    }
+
+    const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
+    if (parseInt(checkSrv.rows[0].count) === 0) {
+      const initServices = [
+        ['01', 'ENGINE SWAP', 'Установка и настройка двигателей RB, 2JZ, SR20. Полная переборка.', 'Мы специализируемся на свапах легендарных двигателей. Установим 2JZ-GTE в ваш кузов или соберем SR20DET с нуля на кованых поршнях.', 'Снятие и дефектовка старого ДВС\nУстановка нового двигателя с подрамником\nИзготовление кастомного выхлопа\nНастройка ЭБУ и стендовая обкатка', 'от 250 000 ₽'],
+        ['02', 'AERO KIT', 'Установка обвесов. Подгонка по миллиметрам. Карбон и стеклопластик.', 'Аэродинамика решает всё. Установим широкие арки, агрессивные бампера и антикрыло.', 'Разметка и подрезка кузова\nУстановка расширителей арок\nМонтаж порогов и сплиттеров\nПокраска и финальная подгонка зазоров', 'от 120 000 ₽'],
+        ['03', 'ECU TUNING', 'Настройка топливных карт и зажигания на стенде. Максимальная отдача.', 'Стоковая прошивка — это ограничение. Мы настроим ваш мотор под конкретное топливо.', 'Установка программируемого ЭБУ (Link, Haltech)\nУстановка датчиков (лямбда, давление)\nСтендовые заезды и калибровка\nТест-драйв и логирование данных', 'от 80 000 ₽']
+      ];
+      for (let s of initServices) {
+        await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1, $2, $3, $4, $5, $6)`, s);
       }
     }
   } catch (err) { console.error('DB Init Error:', err); }
@@ -66,7 +81,6 @@ async function sendTelegramMessage(text) {
   } catch (error) { console.error('[TG ERROR]', error.message); }
 }
 
-// Ограничение для публичных запросов (защита от спама)
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 3 });
 app.use('/api/book', limiter);
 
@@ -74,6 +88,13 @@ app.use('/api/book', limiter);
 app.get('/api/cars', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM cars ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/services', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM services ORDER BY id ASC');
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -88,32 +109,28 @@ app.post('/api/book', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- АДМИН ПАНЕЛЬ (Защищено паролем) ---
+// --- АДМИН ПАНЕЛЬ ---
 const adminAuth = basicAuth({
   users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
   challenge: true,
 });
 
-// Отдаем HTML файл админки
 app.get('/admin', adminAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
 });
 
-// API для получения заявок
 app.get('/api/admin/bookings', adminAuth, async (req, res) => {
   const result = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC');
   res.json(result.rows);
 });
 
-// API для добавления машины
+// API Машин (админ)
 app.post('/api/admin/cars', adminAuth, async (req, res) => {
   const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
   await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, 
     [title, spec, img, engine, hp, weight, drive, accel, description]);
   res.status(201).json({ message: 'Car added' });
 });
-
-// API для обновления машины
 app.put('/api/admin/cars/:id', adminAuth, async (req, res) => {
   const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
   await pool.query(
@@ -122,11 +139,29 @@ app.put('/api/admin/cars/:id', adminAuth, async (req, res) => {
   );
   res.json({ message: 'Car updated' });
 });
-
-// API для удаления машины
 app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => {
   await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]);
   res.json({ message: 'Car deleted' });
+});
+
+// API Услуг (админ)
+app.post('/api/admin/services', adminAuth, async (req, res) => {
+  const { num, title, short, full_description, works, price } = req.body;
+  await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1,$2,$3,$4,$5,$6)`, 
+    [num, title, short, full_description, works, price]);
+  res.status(201).json({ message: 'Service added' });
+});
+app.put('/api/admin/services/:id', adminAuth, async (req, res) => {
+  const { num, title, short, full_description, works, price } = req.body;
+  await pool.query(
+    `UPDATE services SET num=$1, title=$2, short=$3, full_description=$4, works=$5, price=$6 WHERE id=$7`,
+    [num, title, short, full_description, works, price, req.params.id]
+  );
+  res.json({ message: 'Service updated' });
+});
+app.delete('/api/admin/services/:id', adminAuth, async (req, res) => {
+  await pool.query(`DELETE FROM services WHERE id = $1`, [req.params.id]);
+  res.json({ message: 'Service deleted' });
 });
 
 app.listen(PORT, () => console.log(`[SERVER] Запущен на порту ${PORT}`));
