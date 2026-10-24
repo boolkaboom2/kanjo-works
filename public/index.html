@@ -8,7 +8,6 @@
 </head>
 <body>
 
-  <!-- ЭКРАН ЗАГРУЗКИ -->
   <div id="preloader" class="preloader">
     <div class="preloader-content">
       <div class="loader-ring"></div>
@@ -19,19 +18,15 @@
 
   <div class="noise"></div>
 
-  <!-- ШАПКА -->
   <header>
     <div class="logo" id="logo-btn">KANJO<span>_</span>WORKS</div>
     <div class="header-info">
       <span>TOKYO // 35.6762° N, 139.6503° E</span>
       <span id="clock">00:00:00</span>
-      
       <button id="login-btn" class="header-btn">ВОЙТИ</button>
-
       <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </button>
-      
       <button id="sound-toggle" class="sound-btn" title="Звук вкл/выкл">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
       </button>
@@ -39,88 +34,32 @@
   </header>
 
   <main id="scroll-container">
-    
-    <!-- СЕКЦИЯ 1: ГЛАВНАЯ -->
+    <!-- Секции (БЕЗ ИЗМЕНЕНИЙ) -->
     <section class="panel hero">
       <div class="hero-content">
         <h1 class="glitch" data-text="SPEED">SPEED</h1>
         <h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1>
         <p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p>
-        <div class="scroll-hint">
-          <span>SCROLL TO EXPLORE</span>
-          <span class="arrow">→</span>
-        </div>
+        <div class="scroll-hint"><span>SCROLL TO EXPLORE</span><span class="arrow">→</span></div>
       </div>
-      <div class="hero-bg">
-        <img src="img/hero.jpg" alt="JDM Garage">
-      </div>
+      <div class="hero-bg"><img src="img/hero.jpg" alt="JDM Garage"></div>
     </section>
-
-    <!-- СЕКЦИЯ 2: УСЛУГИ -->
-    <section class="panel services">
-      <div class="panel-title">
-        <h2>OUR <br> SERVICES</h2>
-        <span class="kanji">サービス</span>
-      </div>
-      <div class="services-grid" id="services-grid"></div>
-    </section>
-
-    <!-- СЕКЦИЯ 3: ГАЛЕРЕЯ -->
-    <section class="panel gallery">
-      <div class="panel-title">
-        <h2>THE <br> GARAGE</h2>
-        <span class="kanji">ガレージ</span>
-      </div>
-      <div class="gallery-grid" id="gallery-grid"></div>
-    </section>
-
-    <!-- СЕКЦИЯ 4: КОНФИГУРАТОР -->
+    <section class="panel services"><div class="panel-title"><h2>OUR <br> SERVICES</h2><span class="kanji">サービス</span></div><div class="services-grid" id="services-grid"></div></section>
+    <section class="panel gallery"><div class="panel-title"><h2>THE <br> GARAGE</h2><span class="kanji">ガレージ</span></div><div class="gallery-grid" id="gallery-grid"></div></section>
     <section class="panel configurator">
-      <div class="panel-title">
-        <h2>BUILD YOUR <br> LEGEND</h2>
-        <span class="kanji">チューニング</span>
-      </div>
+      <div class="panel-title"><h2>BUILD YOUR <br> LEGEND</h2><span class="kanji">チューニング</span></div>
       <div class="config-layout">
         <div class="config-controls">
-          <div class="config-group">
-            <label>ВЫБЕРИ БАЗУ</label>
-            <div class="select-wrapper">
-              <select id="base-car">
-                <option value="s15" data-hp="250" data-price="1500000">NISSAN SILVIA S15</option>
-                <option value="supra" data-hp="320" data-price="3500000">TOYOTA SUPRA MK4</option>
-                <option value="rx7" data-hp="280" data-price="2800000">MAZDA RX-7</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="config-group">
-            <label>УСТАНОВИТЬ ДЕТАЛИ</label>
-            <div class="part-row">
-              <input type="checkbox" id="part-turbo" data-hp="150" data-price="450000">
-              <label for="part-turbo">TURBO KIT (+150 HP)</label>
-            </div>
-            <div class="part-row">
-              <input type="checkbox" id="part-ecu" data-hp="60" data-price="120000">
-              <label for="part-ecu">ECU TUNE (+60 HP)</label>
-            </div>
-            <div class="part-row">
-              <input type="checkbox" id="part-exhaust" data-hp="25" data-price="80000">
-              <label for="part-exhaust">TITANIUM EXHAUST (+25 HP)</label>
-            </div>
+          <div class="config-group"><label>ВЫБЕРИ БАЗУ</label><div class="select-wrapper"><select id="base-car"></select></div></div>
+          <div class="config-group"><label>УСТАНОВИТЬ ДЕТАЛИ</label>
+            <div class="part-row"><input type="checkbox" id="part-turbo" data-hp="150" data-price="450000"><label for="part-turbo">TURBO KIT (+150 HP)</label></div>
+            <div class="part-row"><input type="checkbox" id="part-ecu" data-hp="60" data-price="120000"><label for="part-ecu">ECU TUNE (+60 HP)</label></div>
+            <div class="part-row"><input type="checkbox" id="part-exhaust" data-hp="25" data-price="80000"><label for="part-exhaust">TITANIUM EXHAUST (+25 HP)</label></div>
           </div>
         </div>
-
         <div class="config-result">
-          <div class="result-box">
-            <span class="result-label">ИТОГОВАЯ МОЩНОСТЬ</span>
-            <div class="result-hp"><span id="total-hp">250</span> <small>HP</small></div>
-          </div>
-          <div class="result-box">
-            <span class="result-label">СТОИМОСТЬ ПРОЕКТА</span>
-            <div class="result-price">от <span id="total-price">1 500 000</span> ₽</div>
-          </div>
-          
-          <!-- НОВЫЕ КНОПКИ -->
+          <div class="result-box"><span class="result-label">ИТОГОВАЯ МОЩНОСТЬ</span><div class="result-hp"><span id="total-hp">250</span> <small>HP</small></div></div>
+          <div class="result-box"><span class="result-label">СТОИМОСТЬ ПРОЕКТА</span><div class="result-price">от <span id="total-price">1 500 000</span> ₽</div></div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button class="btn-racing" id="btn-book-build" style="flex: 1;">ОБСУДИТЬ</button>
             <button class="btn-racing" id="btn-save-build" style="flex: 1; background: transparent; color: var(--text); border-color: var(--text);">В ГАРАЖ</button>
@@ -128,154 +67,124 @@
         </div>
       </div>
     </section>
-
-    <!-- СЕКЦИЯ 5: КОНТАКТЫ -->
     <section class="panel contact">
       <div class="contact-layout">
-        <div class="contact-info">
-          <h2>READY <br>TO RACE?</h2>
-          <p>Запишись на консультацию в наш бокс. Мы находимся в промзоне Токио, найти нас легко по звуку выхлопа.</p>
-          <div class="info-block">
-            <h3>LOCATION</h3>
-            <p>Tokyo, Shibuya City<br>2-Chome, 14-5</p>
-          </div>
-          <div class="info-block">
-            <h3>CONTACT</h3>
-            <p>+81 90 1234 5678<br>race@kanjoworks.jp</p>
-          </div>
-          <div class="socials">
-            <a href="https://www.instagram.com" target="_blank" rel="noopener">INSTAGRAM</a>
-            <a href="https://www.youtube.com" target="_blank" rel="noopener">YOUTUBE</a>
-            <a href="https://telegram.org" target="_blank" rel="noopener">TELEGRAM</a>
-          </div>
+        <div class="contact-info"><h2>READY <br>TO RACE?</h2><p>Запишись на консультацию в наш бокс.</p>
+          <div class="info-block"><h3>LOCATION</h3><p>Tokyo, Shibuya City<br>2-Chome, 14-5</p></div>
+          <div class="info-block"><h3>CONTACT</h3><p>+81 90 1234 5678<br>race@kanjoworks.jp</p></div>
+          <div class="socials"><a href="#">INSTAGRAM</a><a href="#">YOUTUBE</a><a href="#">TELEGRAM</a></div>
         </div>
-
         <div class="contact-form-wrap">
           <h3>BOOK A SLOT</h3>
-          <form id="inline-booking-form">
-            <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
-            <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
-            <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required></div>
+          <form id="inline-booking-form" novalidate>
+            <div class="input-group"><input type="text" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
+            <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required><span class="error-msg"></span></div>
+            <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required><span class="error-msg"></span></div>
             <input type="hidden" class="booking-price-input">
             <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
           </form>
         </div>
       </div>
-      <div class="contact-footer">
-        <p>KANJO WORKS © 2024. ALL RIGHTS RESERVED.</p>
-      </div>
+      <div class="contact-footer"><p>KANJO WORKS © 2024. ALL RIGHTS RESERVED.</p></div>
     </section>
   </main>
 
-  <!-- МОДАЛКА: BOOK A SLOT -->
+  <!-- МОДАЛКА BOOK A SLOT -->
   <div id="booking-modal" class="modal">
     <div class="modal-content">
       <button class="close-modal">✕</button>
       <h2>BOOK A SLOT</h2>
       <p>Оставь данные, и мы свяжемся с тобой.</p>
-      <form id="booking-form">
-        <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
-        <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
-        <div class="input-group"><input type="text" placeholder="CAR MODEL" required></div>
+      <form id="booking-form" novalidate>
+        <div class="input-group"><input type="text" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
+        <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required><span class="error-msg"></span></div>
+        <div class="input-group"><input type="text" placeholder="CAR MODEL" required><span class="error-msg"></span></div>
         <input type="hidden" class="booking-price-input">
         <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
       </form>
     </div>
   </div>
 
-  <!-- МОДАЛКА: ДЕТАЛИ УСЛУГИ -->
+  <!-- ОСТАЛЬНЫЕ МОДАЛКИ (Услуги, Машины, Авторизация, ЛК) -->
   <div id="service-modal" class="modal">
-    <div class="modal-content wide">
-      <button class="close-modal">✕</button>
-      <h2 id="srv-title">SERVICE</h2>
-      <div class="srv-details">
-        <p id="srv-desc" class="srv-desc">Описание...</p>
-        <ul id="srv-list" class="srv-list"></ul>
-        <div class="srv-footer">
-          <div class="srv-price">Цена: <span id="srv-price">от 100 000 ₽</span></div>
-          <button class="btn-racing open-booking">ЗАКАЗАТЬ</button>
-        </div>
+    <div class="modal-content wide"><button class="close-modal">✕</button><h2 id="srv-title">SERVICE</h2>
+      <div class="srv-details"><p id="srv-desc" class="srv-desc">Описание...</p><ul id="srv-list" class="srv-list"></ul>
+        <div class="srv-footer"><div class="srv-price">Цена: <span id="srv-price">от 100 000 ₽</span></div><button class="btn-racing open-booking">ЗАКАЗАТЬ</button></div>
       </div>
     </div>
   </div>
 
-  <!-- МОДАЛКА: ДЕТАЛИ МАШИНЫ -->
   <div id="car-modal" class="modal">
-    <div class="modal-content car-modal-content">
-      <button class="close-modal">✕</button>
+    <div class="modal-content car-modal-content"><button class="close-modal">✕</button>
       <div class="car-modal-layout">
         <div class="car-modal-img"><img id="cm-img" src="" alt="Car"></div>
-        <div class="car-modal-info">
-          <h2 id="cm-title">CAR NAME</h2>
-          <p id="cm-spec" class="cm-spec">ENGINE SPEC</p>
-          <table class="car-table">
-            <tr><td>ДВИГАТЕЛЬ</td><td id="cm-engine">-</td></tr>
-            <tr><td>МОЩНОСТЬ</td><td id="cm-hp">-</td></tr>
-            <tr><td>МАССА</td><td id="cm-weight">-</td></tr>
-            <tr><td>ПРИВОД</td><td id="cm-drive">-</td></tr>
-            <tr><td>0-100 КМ/Ч</td><td id="cm-accel">-</td></tr>
-          </table>
-          <p class="cm-desc" id="cm-desc">Подробное описание...</p>
-          <button class="btn-racing full-width open-booking">ХОЧУ ТАКУЮ ЖЕ</button>
+        <div class="car-modal-info"><h2 id="cm-title">CAR NAME</h2><p id="cm-spec" class="cm-spec">ENGINE SPEC</p>
+          <table class="car-table"><tr><td>ДВИГАТЕЛЬ</td><td id="cm-engine">-</td></tr><tr><td>МОЩНОСТЬ</td><td id="cm-hp">-</td></tr><tr><td>МАССА</td><td id="cm-weight">-</td></tr><tr><td>ПРИВОД</td><td id="cm-drive">-</td></tr><tr><td>0-100 КМ/Ч</td><td id="cm-accel">-</td></tr></table>
+          <p class="cm-desc" id="cm-desc">Подробное описание...</p><button class="btn-racing full-width open-booking">ХОЧУ ТАКУЮ ЖЕ</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- МОДАЛКА: АВТОРИЗАЦИЯ -->
+  <!-- АВТОРИЗАЦИЯ -->
   <div id="auth-modal" class="modal">
     <div class="modal-content">
       <button class="close-modal close-auth">✕</button>
-      
       <div class="auth-tabs">
         <button class="auth-tab active" data-mode="login">ВХОД</button>
         <button class="auth-tab" data-mode="register">РЕГИСТРАЦИЯ</button>
       </div>
-
-      <!-- ТЕКСТ ПРО СКИДКУ -->
       <div style="text-align: center; margin-bottom: 20px;">
-        <p style="color: var(--red); font-size: 13px; font-weight: bold; line-height: 1.4;">Зарегистрируйтесь и получите скидку 5% на первый проект!</p>
+        <p style="color: var(--red); font-size: 13px; font-weight: bold;">Зарегистрируйтесь и получите скидку 5% на первый проект!</p>
       </div>
-
-      <form id="auth-form">
-        <div class="input-group">
-          <input type="email" id="auth-email" placeholder="EMAIL" required>
+      <form id="auth-form" novalidate>
+        <div class="input-group" id="reg-name-group" style="display: none;">
+          <input type="text" id="auth-name" placeholder="ВАШЕ ИМЯ"><span class="error-msg"></span>
+        </div>
+        <div class="input-group" id="reg-phone-group" style="display: none;">
+          <input type="tel" id="auth-phone" placeholder="ТЕЛЕФОН"><span class="error-msg"></span>
         </div>
         <div class="input-group">
-          <input type="password" id="auth-password" placeholder="ПАРОЛЬ" required>
+          <input type="email" id="auth-email" placeholder="EMAIL" required><span class="error-msg"></span>
+        </div>
+        <div class="input-group">
+          <input type="password" id="auth-password" placeholder="ПАРОЛЬ" required><span class="error-msg"></span>
         </div>
         <button type="submit" id="auth-submit-btn" class="btn-racing full-width">ВОЙТИ</button>
       </form>
+      <div style="text-align: center; margin-top: 15px;">
+        <a href="#" id="forgot-pass-btn" style="color: var(--grey); font-size: 12px; text-decoration: underline;">Забыли пароль?</a>
+      </div>
       <p id="auth-error" style="color: red; font-size: 12px; text-align: center; margin-top: 10px; display: none;"></p>
     </div>
   </div>
 
-  <!-- МОДАЛКА: ЛИЧНЫЙ КАБИНЕТ -->
+  <!-- ЛИЧНЫЙ КАБИНЕТ -->
   <div id="profile-modal" class="modal">
     <div class="modal-content wide" style="max-width: 800px;">
       <button class="close-modal close-profile">✕</button>
-      
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin: 0;">ЛИЧНЫЙ КАБИНЕТ</h2>
         <button id="logout-btn" class="btn-racing" style="padding: 8px 16px; font-size: 16px;">ВЫЙТИ</button>
       </div>
-
-      <!-- ВКЛАДКИ ЛК -->
       <div class="auth-tabs" style="margin-bottom: 20px;">
         <button class="auth-tab active" id="tab-btn-bookings">МОИ ЗАЯВКИ</button>
         <button class="auth-tab" id="tab-btn-builds">МОЙ ГАРАЖ</button>
       </div>
+      <div id="profile-tab-bookings"><div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
+      <div id="profile-tab-builds" style="display: none;"><div id="profile-builds-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
+    </div>
+  </div>
 
-      <!-- СПИСОК ЗАЯВОК -->
-      <div id="profile-tab-bookings">
-        <div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div>
-      </div>
-
-      <!-- СПИСОК СБОРОК -->
-      <div id="profile-tab-builds" style="display: none;">
-        <div id="profile-builds-list" style="max-height: 50vh; overflow-y: auto;"></div>
-      </div>
-
+  <!-- МОДАЛКА ВИДЕО -->
+  <button id="credits-btn">CREATED WITH ❤️</button>
+  <div id="video-modal" class="modal">
+    <div class="modal-content" style="max-width: 800px; padding: 0; background: #000;">
+      <button class="close-modal close-video" style="color: white; z-index: 10;">✕</button>
+      <video id="credits-video" controls style="width: 100%; height: auto; display: block;">
+        <source src="img/Deep.mp4" type="video/mp4">
+        Ваш браузер не поддерживает видео.
+      </video>
     </div>
   </div>
 

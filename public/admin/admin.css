@@ -55,3 +55,13 @@ h2 { font-family: var(--font-display); font-size: 32px; margin: 0 0 20px 0; font
 #car-form input:focus, #car-form textarea:focus { border-color: var(--red); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; }
+
+/* Стили для таблицы клиентов */
+.status-select {
+  background: var(--bg); 
+  color: var(--text); 
+  border: 1px solid var(--border);
+  padding: 5px; 
+  border-radius: 4px; 
+  outline: none;
+}

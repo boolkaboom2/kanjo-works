@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
-
   <header>
     <div class="logo">KANJO<span>_</span>ADMIN</div>
     <a href="/" class="btn-back">← На сайт</a>
@@ -17,89 +16,40 @@
     <button class="tab-btn active" data-target="bookings">Заявки</button>
     <button class="tab-btn" data-target="cars">Машины</button>
     <button class="tab-btn" data-target="services">Услуги</button>
+    <button class="tab-btn" data-target="clients">Клиенты</button>
   </div>
 
   <main>
-    <!-- ВКЛАДКА ЗАЯВОК -->
     <section id="bookings" class="tab-content active">
       <h2>Входящие заявки</h2>
       <table class="admin-table">
-        <thead><tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Машина</th><th>Дата</th></tr></thead>
+        <thead><tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Проект</th><th>Статус</th><th>Дата</th></tr></thead>
         <tbody id="bookings-list"></tbody>
       </table>
     </section>
 
-    <!-- ВКЛАДКА МАШИН -->
     <section id="cars" class="tab-content">
-      <div class="section-header">
-        <h2>Управление машинами</h2>
-        <button class="btn-red" id="btn-add-car">+ Добавить машину</button>
-      </div>
-      <table class="admin-table">
-        <thead><tr><th>ID</th><th>Фото</th><th>Название</th><th>Спек</th><th>Действия</th></tr></thead>
-        <tbody id="cars-list"></tbody>
-      </table>
+      <div class="section-header"><h2>Управление машинами</h2><button class="btn-red" id="btn-add-car">+ Добавить</button></div>
+      <table class="admin-table"><thead><tr><th>ID</th><th>Фото</th><th>Название</th><th>Действия</th></tr></thead><tbody id="cars-list"></tbody></table>
     </section>
 
-    <!-- ВКЛАДКА УСЛУГ -->
     <section id="services" class="tab-content">
-      <div class="section-header">
-        <h2>Управление услугами</h2>
-        <button class="btn-red" id="btn-add-service">+ Добавить услугу</button>
-      </div>
+      <div class="section-header"><h2>Управление услугами</h2><button class="btn-red" id="btn-add-service">+ Добавить</button></div>
+      <table class="admin-table"><thead><tr><th>ID</th><th>Название</th><th>Цена</th><th>Действия</th></tr></thead><tbody id="services-list"></tbody></table>
+    </section>
+
+    <section id="clients" class="tab-content">
+      <h2>Зарегистрированные клиенты</h2>
       <table class="admin-table">
-        <thead><tr><th>ID</th><th>Номер</th><th>Название</th><th>Цена</th><th>Действия</th></tr></thead>
-        <tbody id="services-list"></tbody>
+        <thead><tr><th>ID</th><th>Email</th><th>Имя</th><th>Телефон</th><th>Дата регистрации</th></tr></thead>
+        <tbody id="clients-list"></tbody>
       </table>
     </section>
   </main>
 
-  <!-- МОДАЛКА МАШИН -->
-  <div id="car-modal" class="modal">
-    <div class="modal-content">
-      <h3 id="modal-title">Машина</h3>
-      <form id="car-form">
-        <input type="hidden" id="car-id">
-        <input type="text" id="car-title" placeholder="Название" required>
-        <input type="text" id="car-spec" placeholder="Краткий спек" required>
-        <input type="text" id="car-img" placeholder="Фото (img/car1.jpg)" required>
-        <div class="grid-2">
-          <input type="text" id="car-engine" placeholder="Двигатель">
-          <input type="text" id="car-hp" placeholder="Мощность">
-          <input type="text" id="car-weight" placeholder="Масса">
-          <input type="text" id="car-drive" placeholder="Привод">
-          <input type="text" id="car-accel" placeholder="Разгон 0-100">
-        </div>
-        <textarea id="car-desc" placeholder="Описание" rows="3"></textarea>
-        <div class="modal-actions">
-          <button type="button" class="btn-gray" onclick="document.getElementById('car-modal').classList.remove('open')">Отмена</button>
-          <button type="submit" class="btn-red">Сохранить</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- МОДАЛКА УСЛУГ -->
-  <div id="service-modal" class="modal">
-    <div class="modal-content">
-      <h3 id="srv-modal-title">Услуга</h3>
-      <form id="service-form">
-        <input type="hidden" id="srv-id">
-        <div class="grid-2">
-          <input type="text" id="srv-num" placeholder="Номер (01)" required>
-          <input type="text" id="srv-price" placeholder="Цена (от 100 000 ₽)" required>
-        </div>
-        <input type="text" id="srv-title" placeholder="Название (ENGINE SWAP)" required>
-        <textarea id="srv-short" placeholder="Краткое описание" rows="2" required></textarea>
-        <textarea id="srv-full" placeholder="Полное описание" rows="3" required></textarea>
-        <textarea id="srv-works" placeholder="Список работ (каждый пункт с новой строки)" rows="5" required></textarea>
-        <div class="modal-actions">
-          <button type="button" class="btn-gray" onclick="document.getElementById('service-modal').classList.remove('open')">Отмена</button>
-          <button type="submit" class="btn-red">Сохранить</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Модалки (Машины и Услуги) оставь как были -->
+  <div id="car-modal" class="modal"><div class="modal-content"><h3 id="modal-title">Машина</h3><form id="car-form"><input type="hidden" id="car-id"><input type="text" id="car-title" placeholder="Название" required><input type="text" id="car-spec" placeholder="Спек" required><input type="text" id="car-img" placeholder="Фото" required><input type="text" id="car-engine" placeholder="Двигатель"><input type="text" id="car-hp" placeholder="Мощность"><input type="text" id="car-weight" placeholder="Масса"><input type="text" id="car-drive" placeholder="Привод"><input type="text" id="car-accel" placeholder="0-100"><textarea id="car-desc" placeholder="Описание" rows="3"></textarea><div class="modal-actions"><button type="button" class="btn-gray" onclick="document.getElementById('car-modal').classList.remove('open')">Отмена</button><button type="submit" class="btn-red">Сохранить</button></div></form></div></div>
+  <div id="service-modal" class="modal"><div class="modal-content"><h3 id="srv-modal-title">Услуга</h3><form id="service-form"><input type="hidden" id="srv-id"><input type="text" id="srv-num" placeholder="Номер" required><input type="text" id="srv-price" placeholder="Цена" required><input type="text" id="srv-title" placeholder="Название" required><textarea id="srv-short" placeholder="Кратко" required></textarea><textarea id="srv-full" placeholder="Полно" required></textarea><textarea id="srv-works" placeholder="Работы (с новой строки)" required></textarea><div class="modal-actions"><button type="button" class="btn-gray" onclick="document.getElementById('service-modal').classList.remove('open')">Отмена</button><button type="submit" class="btn-red">Сохранить</button></div></form></div></div>
 
   <script src="/admin/admin.js"></script>
 </body>
