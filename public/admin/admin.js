@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
   
-  // --- ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ---
   const tabs = document.querySelectorAll('.tab-btn');
   const contents = document.querySelectorAll('.tab-content');
   tabs.forEach(tab => {
@@ -39,9 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
   window.updateBookingStatus = async (id, status) => {
     await fetch(`/api/admin/bookings/${id}/status`, { 
-      method: 'PUT', 
-      headers: { 'Content-Type': 'application/json' }, 
-      body: JSON.stringify({ status }) 
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) 
     });
     loadBookings();
   };
@@ -59,10 +56,24 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${c.name || '-'}</td>
           <td>${c.phone || '-'}</td>
           <td>${new Date(c.created_at).toLocaleString('ru-RU')}</td>
+          <td>
+            <span class="action-link delete" onclick="deleteClient(${c.id})">Удалить</span>
+          </td>
         </tr>
       `).join('');
     } catch (err) { console.error('Ошибка загрузки клиентов', err); }
   }
+
+  window.deleteClient = async (id) => {
+    if (!confirm('Вы уверены, что хотите удалить клиента? Все его заявки и сборки также будут удалены.')) return;
+    try {
+      const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Ошибка удаления');
+      loadClients();
+    } catch (err) {
+      alert('Ошибка при удалении клиента.');
+    }
+  };
 
   // --- 3. МАШИНЫ ---
   const carModal = document.getElementById('car-modal');
@@ -209,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
   });
 
-  // Инициализация при загрузке
+  // Инициализация
   loadBookings();
   loadClients();
   loadCars();
