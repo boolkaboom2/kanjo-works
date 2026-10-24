@@ -16,20 +16,13 @@ a { color: inherit; text-decoration: none; }
 
 .noise { position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.04; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); }
 
-/* ================= TOAST УВЕДОМЛЕНИЯ ================= */
 #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
-.toast {
-  background: var(--panel); border-left: 4px solid var(--red); padding: 15px 20px; color: var(--text);
-  font-family: var(--font-body); display: flex; justify-content: space-between; align-items: center; gap: 15px;
-  transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-  min-width: 300px;
-}
+.toast { background: var(--panel); border-left: 4px solid var(--red); padding: 15px 20px; color: var(--text); font-family: var(--font-body); display: flex; justify-content: space-between; align-items: center; gap: 15px; transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 5px 15px rgba(0,0,0,0.5); min-width: 300px; }
 .toast.show { transform: translateX(0); }
 .toast button { background: none; border: none; color: var(--grey); cursor: pointer; font-size: 16px; }
 .toast.success { border-left-color: #10b981; }
 .toast.error { border-left-color: #ef4444; }
 
-/* ================= ШАПКА ================= */
 header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; padding: 24px 40px; border-bottom: 1px solid var(--border); background: rgba(10, 10, 10, 0.95); }
 .logo { font-family: var(--font-display); font-size: 28px; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s; }
 .logo:hover { opacity: 0.7; }
@@ -41,14 +34,12 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .header-btn { background: transparent; border: 1px solid var(--red); color: var(--red); padding: 8px 16px; font-family: var(--font-display); font-size: 16px; cursor: pointer; transition: all 0.3s; }
 .header-btn:hover { background: var(--red); color: white; }
 
-/* ================= СКРОЛЛ И ПАНЕЛИ ================= */
 #scroll-container { display: flex; height: 100vh; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; will-change: scroll-position; }
 #scroll-container::-webkit-scrollbar { display: none; }
 .panel { flex-shrink: 0; height: 100vh; padding: 100px 80px 40px; position: relative; border-right: 1px solid var(--border); transform: translateZ(0); backface-visibility: hidden; will-change: transform; overflow: hidden; }
 .panel-title h2 { font-family: var(--font-display); font-size: 96px; line-height: 0.9; margin: 0; letter-spacing: 0.02em; }
 .panel-title .kanji { font-family: var(--font-jp); font-size: 48px; color: var(--red); display: block; margin-top: 10px; }
 
-/* ================= ГЛАВНАЯ ================= */
 .hero { width: 100vw; display: flex; align-items: center; padding-left: 10vw; }
 .hero-content { z-index: 2; }
 .hero-content h1 { display: block; font-family: var(--font-display); font-size: 15vw; line-height: 0.85; margin: 0; text-transform: uppercase; }
@@ -60,7 +51,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .hero-bg { position: absolute; right: 0; top: 0; width: 60vw; height: 100vh; z-index: 1; overflow: hidden; }
 .hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.35; filter: grayscale(100%) contrast(1.5) brightness(0.6); mask-image: linear-gradient(to right, transparent, black 40%); -webkit-mask-image: linear-gradient(to right, transparent, black 40%); }
 
-/* ================= ГЛИТЧ ================= */
 .glitch { position: relative; display: inline-block; }
 .glitch::before, .glitch::after { content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent !important; pointer-events: none; -webkit-text-stroke: 0; }
 .glitch::before { left: 3px; color: var(--red); z-index: -1; animation: glitch-anim-1 3s infinite linear alternate-reverse; }
@@ -68,7 +58,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 @keyframes glitch-anim-1 { 0%, 100% { transform: translate(0); } 20% { transform: translate(-4px, 2px); } 40% { transform: translate(-4px, -2px); } 60% { transform: translate(4px, 2px); } 80% { transform: translate(4px, -2px); } }
 @keyframes glitch-anim-2 { 0%, 100% { transform: translate(0); } 20% { transform: translate(4px, -2px); } 40% { transform: translate(4px, 2px); } 60% { transform: translate(-4px, -2px); } 80% { transform: translate(-4px, 2px); } }
 
-/* ================= УСЛУГИ И ГАЛЕРЕЯ ================= */
 .services { width: 80vw; display: flex; flex-direction: column; justify-content: center; }
 .services-grid { display: flex; gap: 40px; margin-top: 80px; }
 .service-card { border-top: 1px solid var(--border); padding-top: 24px; flex: 1; position: relative; transition: all 0.3s; cursor: pointer; }
@@ -76,6 +65,7 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .service-card .num { font-family: 'Courier New', monospace; color: var(--red); font-size: 14px; }
 .service-card h3 { font-family: var(--font-display); font-size: 32px; margin: 12px 0; }
 .service-card p { color: var(--grey); font-size: 14px; line-height: 1.5; }
+
 .gallery { width: max-content; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 .gallery-grid { display: flex; gap: 40px; margin-top: 60px; height: 50vh; align-items: center; }
 .gallery-item { position: relative; width: 320px; height: 100%; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; transition: border-color 0.3s; }
@@ -87,7 +77,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .gallery-item-info h4 { margin: 0; font-family: var(--font-display); font-size: 24px; }
 .gallery-item-info p { margin: 4px 0 0; color: var(--red); font-size: 12px; font-family: monospace; }
 
-/* ================= КОНФИГУРАТОР ================= */
 .configurator { width: 70vw; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; overflow: hidden; }
 .config-layout { display: flex; gap: 60px; margin-top: 60px; height: 50vh; width: 100%; }
 .config-controls { flex: 1; }
@@ -111,7 +100,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .result-price { font-family: var(--font-display); font-size: 48px; margin-top: 8px; }
 .result-price span { color: var(--text); }
 
-/* ================= КОНТАКТЫ ================= */
 .contact { width: 100vw; display: flex; flex-direction: column; justify-content: space-between; background: #000; position: relative; overflow: hidden; }
 .contact-bg-text { position: absolute; bottom: -5vw; left: -2vw; font-family: var(--font-display); font-size: 30vw; color: rgba(255, 255, 255, 0.02); line-height: 0.8; pointer-events: none; z-index: 0; user-select: none; }
 .contact-layout { display: flex; gap: 80px; padding: 40px 0; flex: 1; max-width: 1000px; position: relative; z-index: 1; }
@@ -128,13 +116,11 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .socials a:hover { color: var(--red); }
 .contact-footer { border-top: 1px solid var(--border); padding-top: 24px; font-family: 'Courier New', monospace; font-size: 12px; color: var(--grey); text-align: center; position: relative; z-index: 1; }
 
-/* ================= КНОПКИ ================= */
 .btn-racing { padding: 16px 40px; background: transparent; color: var(--red); border: 1px solid var(--red); font-family: var(--font-display); font-size: 24px; cursor: pointer; position: relative; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; }
 .btn-racing:hover { background: var(--red); color: #fff; box-shadow: 0 0 15px rgba(255,0,51,0.3); }
 .btn-racing:active { transform: scale(0.98); }
 .btn-racing.full-width { width: 100%; margin-top: 20px; }
 
-/* ================= МОДАЛКИ ================= */
 .modal { position: fixed; inset: 0; background: rgba(10,10,10,0.95); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s; }
 .modal.open { opacity: 1; pointer-events: auto; }
 .modal-content { width: 100%; max-width: 450px; padding: 40px; position: relative; background: var(--bg); border: 1px solid var(--border); transform: scale(0.95) translateY(20px); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -146,7 +132,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .modal-content h2 { font-family: var(--font-display); font-size: 48px; margin: 0 0 10px; color: var(--red); }
 .modal-content p { color: var(--grey); font-size: 14px; margin-bottom: 30px; }
 
-/* SERVICE MODAL */
 .srv-desc { font-size: 16px !important; line-height: 1.6; color: var(--text) !important; }
 .srv-list { list-style: none; padding: 0; margin-bottom: 30px; }
 .srv-list li { padding: 10px 0; border-bottom: 1px solid var(--border); font-family: 'Courier New', monospace; font-size: 14px; }
@@ -155,7 +140,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .srv-price { font-family: var(--font-display); font-size: 32px; }
 .srv-price span { color: var(--red); }
 
-/* CAR MODAL */
 .car-modal-layout { display: flex; height: 100%; min-height: 500px; width: 100%; }
 .car-modal-img { flex: 1; background: #050505; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .car-modal-img img { width: 100%; height: 100%; object-fit: contain; padding: 20px; }
@@ -167,13 +151,11 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .car-table td:last-child { text-align: right; font-weight: 600; }
 .cm-desc { font-size: 14px !important; line-height: 1.6; margin-bottom: 20px !important; }
 
-/* INPUTS */
 .input-group { margin-bottom: 20px; position: relative; }
 .input-group input { width: 100%; background-color: transparent !important; border: none !important; border-bottom: 1px solid var(--border) !important; border-radius: 0 !important; padding: 12px 0; color: var(--text) !important; font-size: 16px; outline: none; font-family: var(--font-body); appearance: none; -webkit-appearance: none; box-shadow: none !important; }
 .input-group input:focus { border-bottom-color: var(--red) !important; }
 .error-msg { color: #ff0033; font-size: 11px; position: absolute; bottom: -15px; left: 0; display: none; }
 
-/* ================= АВТОРИЗАЦИЯ И ЛК ================= */
 .auth-tabs { display: flex; margin-bottom: 30px; border-bottom: 1px solid var(--border); }
 .auth-tab { flex: 1; background: none; border: none; color: var(--grey); font-family: var(--font-display); font-size: 20px; padding: 10px; cursor: pointer; transition: all 0.3s; }
 .auth-tab.active { color: var(--red); border-bottom: 2px solid var(--red); }
@@ -187,7 +169,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .status-work { background: rgba(255, 193, 7, 0.2); color: #ffc107; border: 1px solid #ffc107; }
 .status-done { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
 
-/* ================= ПРЕЛОАДЕР ================= */
 .preloader { position: fixed; inset: 0; z-index: 99999; background-color: var(--bg); display: flex; align-items: center; justify-content: center; transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1); }
 .preloader.hidden { transform: translateY(-100%); pointer-events: none; }
 .preloader-content { display: flex; flex-direction: column; align-items: center; gap: 20px; }
@@ -196,7 +177,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .loader-text { font-family: var(--font-display); font-size: 24px; color: var(--text); letter-spacing: 0.1em; }
 .loader-hint { font-family: 'Courier New', monospace; font-size: 12px; color: var(--red); letter-spacing: 0.2em; animation: pulse 1.5s infinite; }
 
-/* ================= КНОПКА ВИДЕО ================= */
 #credits-btn {
   position: fixed; bottom: 20px; right: 20px; z-index: 9999;
   background: rgba(255, 0, 51, 0.1); border: 1px solid var(--red); color: var(--red);
@@ -205,21 +185,29 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 }
 #credits-btn:hover { background: var(--red); color: #fff; box-shadow: 0 0 20px var(--red); }
 
+/* ЧИСТЫЙ ВИДЕОПЛЕЕР С НЕОНОВОЙ РАМКОЙ */
 .video-custom-modal .modal-content {
-  max-width: 1000px; padding: 0; background: #000; border: 1px solid var(--red); 
-  /* Эффект пламени */
-  box-shadow: 0 0 15px rgba(255, 0, 51, 0.4), inset 0 0 10px rgba(255, 0, 51, 0.2);
-  animation: flame-glow 2s infinite alternate;
+  max-width: 1000px; padding: 0; background: #000; border: 2px solid var(--red); border-radius: 8px; overflow: hidden;
+  box-shadow: 0 0 25px rgba(255, 0, 51, 0.5);
   transform: scale(0.9) translateY(20px); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
 }
+.video-custom-modal.open .modal-content { transform: scale(1) translateY(0); }
+.video-wrapper { position: relative; width: 100%; background: #000; }
+.video-wrapper video { width: 100%; display: block; border: none; }
 
-@keyframes flame-glow {
-  0% { box-shadow: 0 0 15px rgba(255, 0, 51, 0.4), inset 0 0 10px rgba(255, 0, 51, 0.2); border-color: #ff0033; }
-  50% { box-shadow: 0 0 25px rgba(255, 100, 0, 0.6), inset 0 0 15px rgba(255, 100, 0, 0.4); border-color: #ff5500; }
-  100% { box-shadow: 0 0 30px rgba(255, 200, 0, 0.8), inset 0 0 20px rgba(255, 200, 0, 0.5); border-color: #ffcc00; }
+.custom-controls {
+  display: flex; align-items: center; gap: 15px; padding: 15px 20px; background: rgba(10, 10, 10, 0.95); border-top: 1px solid var(--red);
 }
+.ctrl-btn { background: none; border: none; color: var(--text); font-size: 18px; cursor: pointer; transition: color 0.2s; display: flex; align-items: center; justify-content: center; }
+.ctrl-btn:hover { color: var(--red); }
+.time-display { font-family: 'Courier New', monospace; font-size: 13px; color: #ccc; min-width: 80px; text-align: center; }
 
-/* ================= МОБИЛЬНАЯ ВЕРСИЯ ================= */
+.progress-container { flex: 1; height: 4px; background: rgba(255, 255, 255, 0.2); cursor: pointer; position: relative; border-radius: 2px; }
+.progress-container:hover { height: 6px; }
+.progress-bar { height: 100%; background: var(--red); width: 0%; border-radius: 2px; position: relative; }
+.progress-bar::after { content: ''; position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; background: var(--red); border-radius: 50%; opacity: 0; transition: opacity 0.2s; }
+.progress-container:hover .progress-bar::after { opacity: 1; }
+
 @media (max-width: 1024px) {
   #scroll-container { display: block; height: auto; overflow: visible; }
   body { overflow-y: auto; height: auto; }
@@ -255,7 +243,7 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
   .auth-tab { border: 1px solid var(--border); border-radius: 4px; }
   .auth-tab.active { border-color: var(--red); }
   #credits-btn { bottom: 10px; right: 10px; font-size: 12px; padding: 8px 12px; }
-  .custom-controls { padding: 10px; gap: 10px; }
+  .custom-controls { padding: 10px; gap: 10px; flex-wrap: wrap; }
   .ctrl-btn { font-size: 14px; }
   .time-display { font-size: 10px; min-width: 60px; }
 }

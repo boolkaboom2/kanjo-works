@@ -42,34 +42,69 @@
   phoneInputs.forEach(input => {
     input.addEventListener('input', (e) => {
       let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-      if (!x[2] && x[1] !== '') {
-        e.target.value = x[1] === '7' ? '+7 ' : '+7 (' + x[1];
-      } else if (!x[3] && x[2] !== '') {
-        e.target.value = '+7 (' + x[2] + ') ';
-      } else if (!x[4] && x[3] !== '') {
-        e.target.value = '+7 (' + x[2] + ') ' + x[3] + '-';
-      } else if (!x[5] && x[4] !== '') {
-        e.target.value = '+7 (' + x[2] + ') ' + x[3] + '-' + x[4] + '-';
-      } else {
-        e.target.value = '+7 (' + x[2] + ') ' + x[3] + '-' + x[4] + '-' + x[5];
-      }
+      if (!x[2] && x[1] !== '') { e.target.value = x[1] === '7' ? '+7 ' : '+7 (' + x[1]; } 
+      else if (!x[3] && x[2] !== '') { e.target.value = '+7 (' + x[2] + ') '; } 
+      else if (!x[4] && x[3] !== '') { e.target.value = '+7 (' + x[2] + ') ' + x[3] + '-'; } 
+      else if (!x[5] && x[4] !== '') { e.target.value = '+7 (' + x[2] + ') ' + x[3] + '-' + x[4] + '-'; } 
+      else { e.target.value = '+7 (' + x[2] + ') ' + x[3] + '-' + x[4] + '-' + x[5]; }
     });
     input.addEventListener('focus', (e) => { if (!e.target.value) e.target.value = '+7 ('; });
     input.addEventListener('blur', (e) => { if (e.target.value === '+7 (') e.target.value = ''; });
   });
 
-  /* ---------- 3. ЗВУКИ И ЧАСЫ ---------- */
+  /* ---------- 3. ЗВУКИ ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx, isSoundOn = true;
   function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+  
   function playSound(type) {
     if (!isSoundOn || !audioCtx) return;
-    const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    if (type === 'hover') { osc.type = 'square'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); gain.gain.setValueAtTime(0.02, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02); osc.start(); osc.stop(audioCtx.currentTime + 0.02); }
-    else if (type === 'click') { osc.type = 'triangle'; osc.frequency.setValueAtTime(120, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.08); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08); osc.start(); osc.stop(audioCtx.currentTime + 0.08); }
-    else if (type === 'modal') { osc.type = 'sine'; osc.frequency.setValueAtTime(80, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.2); gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25); osc.start(); osc.stop(audioCtx.currentTime + 0.25); }
-    else if (type === 'car') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(40, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(120, audioCtx.currentTime + 0.3); osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.6); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7); const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 400; osc.disconnect(); osc.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.7); }
+    
+    if (type === 'hover') {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'square'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.02, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.02);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.02);
+    } 
+    else if (type === 'click') {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'triangle'; osc.frequency.setValueAtTime(120, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+    }
+    else if (type === 'modal') {
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(80, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+    }
+    else if (type === 'car') {
+      const now = audioCtx.currentTime;
+      // Рокот мотора
+      const osc1 = audioCtx.createOscillator(); const osc2 = audioCtx.createOscillator();
+      const engineGain = audioCtx.createGain(); const filter = audioCtx.createBiquadFilter();
+      osc1.type = 'sawtooth'; osc2.type = 'square';
+      osc1.frequency.setValueAtTime(60, now); osc1.frequency.linearRampToValueAtTime(180, now + 0.25); osc1.frequency.exponentialRampToValueAtTime(70, now + 0.6);
+      osc2.frequency.setValueAtTime(30, now); osc2.frequency.linearRampToValueAtTime(90, now + 0.25); osc2.frequency.exponentialRampToValueAtTime(35, now + 0.6);
+      filter.type = 'lowpass'; filter.frequency.setValueAtTime(500, now); filter.frequency.linearRampToValueAtTime(1500, now + 0.25); filter.frequency.exponentialRampToValueAtTime(400, now + 0.6);
+      engineGain.gain.setValueAtTime(0.15, now); engineGain.gain.linearRampToValueAtTime(0.25, now + 0.25); engineGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      osc1.connect(filter); osc2.connect(filter); filter.connect(engineGain); engineGain.connect(audioCtx.destination);
+      osc1.start(now); osc1.stop(now + 0.7); osc2.start(now); osc2.stop(now + 0.7);
+      // Пшик турбины
+      const bufferSize = audioCtx.sampleRate * 0.5; const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = buffer;
+      const noiseFilter = audioCtx.createBiquadFilter(); noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.setValueAtTime(4000, now + 0.35); noiseFilter.frequency.exponentialRampToValueAtTime(1500, now + 0.65); noiseFilter.Q.value = 2;
+      const noiseGain = audioCtx.createGain();
+      noiseGain.gain.setValueAtTime(0.001, now); noiseGain.gain.setValueAtTime(0.001, now + 0.3); noiseGain.gain.linearRampToValueAtTime(0.08, now + 0.35); noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      noiseNode.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+      noiseNode.start(now); noiseNode.stop(now + 0.7);
+    }
   }
+
   document.body.addEventListener('click', initAudio, { once: true });
   document.querySelectorAll('a, button, select, .part-row label').forEach(el => { el.addEventListener('mouseenter', () => playSound('hover')); el.addEventListener('click', () => playSound('click')); });
   const soundBtn = document.getElementById('sound-toggle');
@@ -84,7 +119,7 @@
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${c.img}" alt="${c.title}"><div class="gallery-item-info"><h4>${c.title}</h4><p>${c.spec}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
-        const car = carsData[item.dataset.index]; playSound('car');
+        const car = carsData[item.dataset.index]; playSound('car'); // ЗВУК МАШИНЫ
         document.getElementById('cm-img').src = car.img; document.getElementById('cm-title').textContent = car.title; document.getElementById('cm-spec').textContent = car.spec;
         document.getElementById('cm-engine').textContent = car.engine; document.getElementById('cm-hp').textContent = car.hp; document.getElementById('cm-weight').textContent = car.weight;
         document.getElementById('cm-drive').textContent = car.drive; document.getElementById('cm-accel').textContent = car.accel; document.getElementById('cm-desc').textContent = car.description;
@@ -127,7 +162,7 @@
   }
   if (baseCarSelect) { baseCarSelect.addEventListener('change', calculateConfig); partsCbs.forEach(c => c.addEventListener('change', calculateConfig)); }
 
-  /* ---------- 6. АВТОРИЗАЦИЯ С ВЕРИФИКАЦИЕЙ ---------- */
+  /* ---------- 6. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---------- */
   let authToken = localStorage.getItem('kanjo_token') || null;
   let currentUser = null;
   let tempEmail = ''; 
@@ -139,15 +174,13 @@
   }
   updateAuthUI();
 
-   document.getElementById('login-btn').addEventListener('click', () => {
-    // Сброс форм
+  document.getElementById('login-btn').addEventListener('click', () => {
     document.getElementById('auth-form').reset();
     document.getElementById('verify-form').reset();
     document.getElementById('auth-step-1').style.display = 'block';
     document.getElementById('auth-step-2').style.display = 'none';
     document.getElementById('auth-error').style.display = 'none';
     
-    // Принудительное переключение на вкладку "Вход"
     const loginTab = document.querySelector('.auth-tab[data-mode="login"]');
     if (loginTab) {
       document.querySelectorAll('.auth-tab[data-mode]').forEach(t => t.classList.remove('active'));
@@ -155,7 +188,6 @@
       document.querySelectorAll('.reg-only').forEach(el => el.style.display = 'none');
       document.getElementById('auth-submit-btn').textContent = 'ВОЙТИ';
     }
-    
     authModal.classList.add('open');
   });
 
@@ -196,7 +228,18 @@
 
     try {
       const res = await fetch(isLogin ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json(); if (!res.ok) throw new Error(data.error);
+      const data = await res.json(); 
+      
+      if (!res.ok) {
+        if (data.needsVerify) {
+          tempEmail = data.email;
+          document.getElementById('auth-step-1').style.display = 'none';
+          document.getElementById('auth-step-2').style.display = 'block';
+          showToast('Введите код подтверждения', 'success');
+          return;
+        }
+        throw new Error(data.error);
+      }
       
       if (isLogin) {
         authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
@@ -207,7 +250,10 @@
         tempEmail = email;
         document.getElementById('auth-step-1').style.display = 'none';
         document.getElementById('auth-step-2').style.display = 'block';
-        showToast('Код отправлен на вашу почту!', 'success');
+        
+        // ВЫВОДИМ КОД ПРЯМО НА САЙТЕ И АВТОМАТИЧЕСКИ ВСТАВЛЯЕМ
+        showToast(`Ваш код: ${data.code}`, 'success');
+        document.getElementById('auth-code').value = data.code;
       }
     } catch (err) { 
       document.getElementById('auth-error').textContent = err.message; document.getElementById('auth-error').style.display = 'block'; 
@@ -240,7 +286,11 @@
     if (!email) return;
     try {
       const res = await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-      const data = await res.json(); if(res.ok) showToast(data.message, 'success'); else showToast(data.error, 'error');
+      const data = await res.json(); 
+      if(res.ok) {
+        showToast(`Ваш новый пароль: ${data.pass}`, 'success');
+        console.log(`Новый пароль для ${email}: ${data.pass}`);
+      } else { showToast(data.error, 'error'); }
     } catch (err) { showToast('Ошибка сервера', 'error'); }
   });
 
@@ -369,13 +419,8 @@
   videoModal.addEventListener('click', (e) => { if (e.target === videoModal) closeVideo(); });
 
   playPauseBtn.addEventListener('click', () => {
-    if (video.paused) {
-      video.play();
-      playPauseBtn.textContent = '⏸';
-    } else {
-      video.pause();
-      playPauseBtn.textContent = '▶';
-    }
+    if (video.paused) { video.play(); playPauseBtn.textContent = '⏸'; } 
+    else { video.pause(); playPauseBtn.textContent = '▶'; }
   });
 
   muteBtn.addEventListener('click', () => {

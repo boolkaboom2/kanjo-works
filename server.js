@@ -8,7 +8,6 @@ const rateLimit = require('express-rate-limit');
 const basicAuth = require('express-basic-auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,14 +23,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public'))); 
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -44,7 +35,6 @@ async function initDB() {
       id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL, 
       name VARCHAR(255), phone VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
-    
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10)`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE`);
 
@@ -67,7 +57,6 @@ async function initDB() {
       id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
     )`);
 
-    // Дефолтные данные
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -110,26 +99,33 @@ const authMiddleware = (req, res, next) => {
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, phone } = req.body;
   try {
-    const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (check.rows.length > 0) return res.status(400).json({ error: 'Этот email уже занят. Попробуйте войти.' });
-
     const hash = await bcrypt.hash(password, 10);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
+    const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    
+    if (check.rows.length > 0) {
+      if (check.rows[0].is_verified) {
+        return res.status(400).json({ error: 'Этот email уже зарегистрирован. Попробуйте войти.' });
+      } else {
+        // Обновляем данные, если аккаунт есть, но не подтвержден
+        await pool.query(
+          `UPDATE users SET password_hash = $1, name = $2, phone = $3, verification_code = $4 WHERE email = $5`, 
+          [hash, name, phone, code, email]
+        );
+        res.status(201).json({ message: 'Новый код отправлен', email, code });
+        console.log(`[AUTH] Новый код для ${email}: ${code}`);
+        return;
+      }
+    }
+
     await pool.query(
       `INSERT INTO users (email, password_hash, name, phone, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, FALSE)`, 
       [email, hash, name, phone, code]
     );
-
-    res.status(201).json({ message: 'Код отправлен на почту', email });
+    
+    res.status(201).json({ message: 'Код отправлен', email, code });
     console.log(`[AUTH] Код подтверждения для ${email}: ${code}`);
-
-    transporter.sendMail({
-      from: '"KANJO WORKS" <no-reply@kanjoworks.jp>',
-      to: email,
-      subject: 'Код подтверждения регистрации',
-      text: `Ваш код для завершения регистрации: ${code}`
-    }).catch(err => console.error('[EMAIL ERROR]', err));
 
   } catch (err) { 
     if (res.headersSent) return;
@@ -156,10 +152,14 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
     const user = result.rows[0];
-    if (!user || !user.is_verified) return res.status(400).json({ error: 'Аккаунт не найден или не подтвержден' });
+    if (!user) return res.status(400).json({ error: 'Неверный email или пароль' });
     
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
+
+    if (!user.is_verified) {
+      return res.status(403).json({ error: 'Аккаунт не подтвержден', needsVerify: true, email });
+    }
     
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
@@ -176,15 +176,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const hash = await bcrypt.hash(newPass, 10);
     await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [hash, email]);
 
-    res.json({ message: 'Новый пароль отправлен на вашу почту' });
-    
-    transporter.sendMail({
-      from: '"KANJO WORKS" <no-reply@kanjoworks.jp>',
-      to: email,
-      subject: 'Восстановление пароля',
-      text: `Ваш новый пароль: ${newPass}`
-    }).catch(err => console.error('[EMAIL ERROR]', err));
-
+    res.json({ message: `Новый пароль: ${newPass}`, pass: newPass });
+    console.log(`[AUTH] Новый пароль для ${email}: ${newPass}`);
   } catch (err) { 
     if (res.headersSent) return;
     res.status(500).json({ error: err.message }); 
@@ -206,7 +199,6 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   let { name, phone, car, price } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
   const userId = req.user ? req.user.userId : null;
-  
   let finalPrice = parseInt(price) || null;
   let discountText = '';
   
@@ -257,7 +249,6 @@ app.get('/api/admin/bookings', adminAuth, async (req, res) => { const r = await 
 app.put('/api/admin/bookings/:id/status', adminAuth, async (req, res) => { await pool.query(`UPDATE bookings SET status = $1 WHERE id = $2`, [req.body.status, req.params.id]); res.json({ message: 'OK' }); });
 app.get('/api/admin/clients', adminAuth, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
 
-// УДАЛЕНИЕ КЛИЕНТА
 app.delete('/api/admin/clients/:id', adminAuth, async (req, res) => {
   try {
     const clientId = req.params.id;
