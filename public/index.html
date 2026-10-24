@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- ЭКРАН ЗАГРУЗКИ (ПРЕЛОАДЕР) -->
+
+  <!-- ЭКРАН ЗАГРУЗКИ -->
   <div id="preloader" class="preloader">
     <div class="preloader-content">
       <div class="loader-ring"></div>
@@ -15,17 +16,20 @@
       <div class="loader-hint">WAKE UP ENGINE</div>
     </div>
   </div>
+
   <div class="noise"></div>
 
+  <!-- ШАПКА -->
   <header>
-       <div class="header-info">
+    <div class="logo" id="logo-btn">KANJO<span>_</span>WORKS</div>
+    <div class="header-info">
       <span>TOKYO // 35.6762° N, 139.6503° E</span>
       <span id="clock">00:00:00</span>
       
-      <!-- КНОПКА ВХОДА (видна только гостям) -->
-     <button id="login-btn" class="header-btn">ВОЙТИ</button>
+      <!-- Кнопка входа (видна только гостям) -->
+      <button id="login-btn" class="header-btn">ВОЙТИ</button>
 
-      <!-- КНОПКА ПРОФИЛЯ (видна только авторизованным) -->
+      <!-- Кнопка профиля (видна только авторизованным) -->
       <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
       </button>
@@ -35,8 +39,10 @@
       </button>
     </div>
   </header>
+
   <main id="scroll-container">
     
+    <!-- СЕКЦИЯ 1: ГЛАВНАЯ -->
     <section class="panel hero">
       <div class="hero-content">
         <h1 class="glitch" data-text="SPEED">SPEED</h1>
@@ -52,6 +58,7 @@
       </div>
     </section>
 
+    <!-- СЕКЦИЯ 2: УСЛУГИ -->
     <section class="panel services">
       <div class="panel-title">
         <h2>OUR <br> SERVICES</h2>
@@ -60,6 +67,7 @@
       <div class="services-grid" id="services-grid"></div>
     </section>
 
+    <!-- СЕКЦИЯ 3: ГАЛЕРЕЯ -->
     <section class="panel gallery">
       <div class="panel-title">
         <h2>THE <br> GARAGE</h2>
@@ -68,6 +76,7 @@
       <div class="gallery-grid" id="gallery-grid"></div>
     </section>
 
+    <!-- СЕКЦИЯ 4: КОНФИГУРАТОР -->
     <section class="panel configurator">
       <div class="panel-title">
         <h2>BUILD YOUR <br> LEGEND</h2>
@@ -117,6 +126,7 @@
       </div>
     </section>
 
+    <!-- СЕКЦИЯ 5: КОНТАКТЫ -->
     <section class="panel contact">
       <div class="contact-layout">
         <div class="contact-info">
@@ -140,15 +150,9 @@
         <div class="contact-form-wrap">
           <h3>BOOK A SLOT</h3>
           <form id="inline-booking-form">
-            <div class="input-group">
-              <input type="text" placeholder="YOUR NAME" required>
-            </div>
-            <div class="input-group">
-              <input type="tel" placeholder="PHONE NUMBER" required>
-            </div>
-            <div class="input-group">
-              <input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required>
-            </div>
+            <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
+            <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
+            <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required></div>
             <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
           </form>
         </div>
@@ -157,9 +161,9 @@
         <p>KANJO WORKS © 2024. ALL RIGHTS RESERVED.</p>
       </div>
     </section>
-
   </main>
 
+  <!-- МОДАЛКА: BOOK A SLOT -->
   <div id="booking-modal" class="modal">
     <div class="modal-content">
       <button class="close-modal">✕</button>
@@ -168,12 +172,13 @@
       <form id="booking-form">
         <div class="input-group"><input type="text" placeholder="YOUR NAME" required></div>
         <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required></div>
-        <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required></div>
+        <div class="input-group"><input type="text" placeholder="CAR MODEL" required></div>
         <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
       </form>
     </div>
   </div>
 
+  <!-- МОДАЛКА: ДЕТАЛИ УСЛУГИ -->
   <div id="service-modal" class="modal">
     <div class="modal-content wide">
       <button class="close-modal">✕</button>
@@ -189,13 +194,12 @@
     </div>
   </div>
 
+  <!-- МОДАЛКА: ДЕТАЛИ МАШИНЫ -->
   <div id="car-modal" class="modal">
     <div class="modal-content car-modal-content">
       <button class="close-modal">✕</button>
       <div class="car-modal-layout">
-        <div class="car-modal-img">
-          <img id="cm-img" src="" alt="Car">
-        </div>
+        <div class="car-modal-img"><img id="cm-img" src="" alt="Car"></div>
         <div class="car-modal-info">
           <h2 id="cm-title">CAR NAME</h2>
           <p id="cm-spec" class="cm-spec">ENGINE SPEC</p>
@@ -206,10 +210,45 @@
             <tr><td>ПРИВОД</td><td id="cm-drive">-</td></tr>
             <tr><td>0-100 КМ/Ч</td><td id="cm-accel">-</td></tr>
           </table>
-          <p class="cm-desc" id="cm-desc">Подробное описание проекта...</p>
+          <p class="cm-desc" id="cm-desc">Подробное описание...</p>
           <button class="btn-racing full-width open-booking">ХОЧУ ТАКУЮ ЖЕ</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: АВТОРИЗАЦИЯ -->
+  <div id="auth-modal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal close-auth">✕</button>
+      
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-mode="login">ВХОД</button>
+        <button class="auth-tab" data-mode="register">РЕГИСТРАЦИЯ</button>
+      </div>
+
+      <form id="auth-form">
+        <div class="input-group">
+          <input type="email" id="auth-email" placeholder="EMAIL" required>
+        </div>
+        <div class="input-group">
+          <input type="password" id="auth-password" placeholder="ПАРОЛЬ" required>
+        </div>
+        <button type="submit" id="auth-submit-btn" class="btn-racing full-width">ВОЙТИ</button>
+      </form>
+      <p id="auth-error" style="color: red; font-size: 12px; text-align: center; margin-top: 10px; display: none;"></p>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: ЛИЧНЫЙ КАБИНЕТ -->
+  <div id="profile-modal" class="modal">
+    <div class="modal-content wide" style="max-width: 800px;">
+      <button class="close-modal close-profile">✕</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">МОИ ПРОЕКТЫ</h2>
+        <button id="logout-btn" class="btn-racing" style="padding: 8px 16px; font-size: 16px;">ВЫЙТИ</button>
+      </div>
+      <div id="profile-bookings-list" style="max-height: 60vh; overflow-y: auto;"></div>
     </div>
   </div>
 

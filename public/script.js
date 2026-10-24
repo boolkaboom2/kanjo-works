@@ -3,17 +3,14 @@
 
   /* ---------- 0. ПРЕЛОАДЕР ---------- */
   window.addEventListener('load', async () => {
-    try {
-      await fetch('/api/cars', { method: 'HEAD', cache: 'no-store' }).catch(() => {});
-    } finally {
+    try { await fetch('/api/cars', { method: 'HEAD', cache: 'no-store' }).catch(() => {}); } 
+    finally {
       const preloader = document.getElementById('preloader');
-      if (preloader) {
-        setTimeout(() => preloader.classList.add('hidden'), 800);
-      }
+      if (preloader) setTimeout(() => preloader.classList.add('hidden'), 800);
     }
   });
 
-  /* ---------- 1. АУДИО ---------- */
+  /* ---------- 1. АУДИО СИСТЕМА ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   let audioCtx;
   let isSoundOn = true;
@@ -77,19 +74,52 @@
       if (isSoundOn) playClickSound();
     });
   }
-  document.querySelectorAll('a, button, select, .part-row label, .btn-racing, .logo').forEach(el => {
+  document.querySelectorAll('a, button, select, .part-row label, .btn-racing, .logo, .header-btn').forEach(el => {
     el.addEventListener('mouseenter', playHoverSound); el.addEventListener('click', playClickSound);
   });
 
   /* ---------- 2. ЧАСЫ ---------- */
   const clockEl = document.getElementById('clock');
   if (clockEl) {
-    setInterval(() => {
-      clockEl.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`;
-    }, 1000);
+    setInterval(() => { clockEl.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`; }, 1000);
   }
 
-  /* ---------- 3. БАЗА ДАННЫХ (СЕРВЕР) ---------- */
+  /* ---------- 3. СКРОЛЛ И ПАНЕЛИ ---------- */
+  const container = document.getElementById('scroll-container');
+  const logoBtn = document.getElementById('logo-btn');
+  
+  if (container && window.innerWidth > 1024) {
+    let targetScroll = container.scrollLeft;
+    let currentScroll = container.scrollLeft;
+    let isAnimating = false;
+
+    if (logoBtn) {
+      logoBtn.addEventListener('click', () => {
+        targetScroll = 0;
+        if (!isAnimating) { isAnimating = true; requestAnimationFrame(updateScroll); }
+      });
+    }
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      targetScroll += e.deltaY * 1.5;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+      if (!isAnimating) { isAnimating = true; requestAnimationFrame(updateScroll); }
+    }, { passive: false });
+
+    function updateScroll() {
+      currentScroll += (targetScroll - currentScroll) * 0.08;
+      container.scrollLeft = currentScroll;
+      if (Math.abs(targetScroll - currentScroll) > 0.5) { requestAnimationFrame(updateScroll); } 
+      else { container.scrollLeft = targetScroll; currentScroll = targetScroll; isAnimating = false; }
+    }
+    window.addEventListener('resize', () => { targetScroll = container.scrollLeft; currentScroll = container.scrollLeft; });
+  } else {
+    if (logoBtn) logoBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  /* ---------- 4. БАЗА ДАННЫХ (СЕРВЕР) ---------- */
   let carsData = [];
   let servicesData = [];
 
@@ -132,57 +162,9 @@
         });
       });
     } catch (err) { console.error(err); }
-    
-  }
-    /* ---------- 3.5 КАСТОМНЫЙ ПЛАВНЫЙ СКРОЛЛ ---------- */
-  const container = document.getElementById('scroll-container');
-  const logoBtn = document.getElementById('logo-btn');
-  
-  if (container && window.innerWidth > 1024) {
-    let targetScroll = container.scrollLeft;
-    let currentScroll = container.scrollLeft;
-    let isAnimating = false;
-
-    if (logoBtn) {
-      logoBtn.addEventListener('click', () => {
-        targetScroll = 0;
-        if (!isAnimating) { isAnimating = true; requestAnimationFrame(updateScroll); }
-      });
-    }
-
-    container.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      targetScroll += e.deltaY * 1.5;
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
-      if (!isAnimating) { isAnimating = true; requestAnimationFrame(updateScroll); }
-    }, { passive: false });
-
-    function updateScroll() {
-      currentScroll += (targetScroll - currentScroll) * 0.08;
-      container.scrollLeft = currentScroll;
-      if (Math.abs(targetScroll - currentScroll) > 0.5) {
-        requestAnimationFrame(updateScroll);
-      } else {
-        container.scrollLeft = targetScroll;
-        currentScroll = targetScroll;
-        isAnimating = false;
-      }
-    }
-    window.addEventListener('resize', () => {
-      targetScroll = container.scrollLeft;
-      currentScroll = container.scrollLeft;
-    });
-  } else {
-    if (logoBtn) {
-      logoBtn.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
-    }
   }
 
-
-  /* ---------- 4. МОДАЛКИ ---------- */
+  /* ---------- 5. МОДАЛКИ ---------- */
   const bookingModal = document.getElementById('booking-modal');
   const serviceModal = document.getElementById('service-modal');
   const carModal = document.getElementById('car-modal');
@@ -215,7 +197,7 @@
     });
   }
 
-  /* ---------- 5. КОНФИГУРАТОР ---------- */
+  /* ---------- 6. КОНФИГУРАТОР ---------- */
   const baseCarSelect = document.getElementById('base-car');
   const partsCheckboxes = document.querySelectorAll('.part-row input[type="checkbox"]');
   const totalHpEl = document.getElementById('total-hp');
@@ -248,7 +230,7 @@
     });
   }
 
-  /* ---------- 6. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---------- */
+  /* ---------- 7. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---------- */
   let authToken = localStorage.getItem('kanjo_token') || null;
   const authModal = document.getElementById('auth-modal');
   const profileModal = document.getElementById('profile-modal');
@@ -270,7 +252,7 @@
   }
   updateAuthUI();
 
-  if (loginBtn) {
+  if (loginBtn && authModal) {
     loginBtn.addEventListener('click', () => { authModal.classList.add('open'); });
   }
 
@@ -313,7 +295,7 @@
     });
   }
 
-  if (profileBtn) {
+  if (profileBtn && profileModal) {
     profileBtn.addEventListener('click', async () => {
       profileModal.classList.add('open');
       const list = document.getElementById('profile-bookings-list');
@@ -342,8 +324,10 @@
   }
   const closeProfileBtn = document.querySelector('.close-profile');
   if (closeProfileBtn) closeProfileBtn.addEventListener('click', () => profileModal.classList.remove('open'));
+  const closeAuthBtn = document.querySelector('.close-auth');
+  if (closeAuthBtn) closeAuthBtn.addEventListener('click', () => authModal.classList.remove('open'));
 
-  /* ---------- 7. ОТПРАВКА ЗАЯВКИ ---------- */
+  /* ---------- 8. ОТПРАВКА ЗАЯВКИ ---------- */
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
@@ -351,17 +335,20 @@
     const nameInput = e.target.querySelector('input[type="text"]');
     const phoneInput = e.target.querySelector('input[type="tel"]');
     const carInput = e.target.querySelectorAll('input[type="text"]')[1];
+    
     const data = {
       name: nameInput ? nameInput.value : 'Не указано',
       phone: phoneInput ? phoneInput.value : 'Не указан',
       car: carInput ? carInput.value : 'Не указана'
     };
+
     btn.textContent = 'SENDING...'; btn.style.opacity = '0.7';
     try {
       const headers = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const response = await fetch('/api/book', { method: 'POST', headers: headers, body: JSON.stringify(data) });
       if (!response.ok) throw new Error('Ошибка');
+      
       btn.textContent = 'SUCCESS!'; btn.style.background = '#fff'; btn.style.color = '#000';
       playModalSound();
       setTimeout(() => { e.target.reset(); btn.textContent = originalText; btn.style.background = ''; btn.style.color = ''; btn.style.opacity = '1'; closeAllModals(); }, 2000);
@@ -370,12 +357,13 @@
       setTimeout(() => { btn.textContent = originalText; btn.style.background = ''; btn.style.color = ''; btn.style.opacity = '1'; }, 2000);
     }
   };
+  
   const bookingForm = document.getElementById('booking-form');
   if (bookingForm) bookingForm.addEventListener('submit', handleFormSubmit);
   const inlineBookingForm = document.getElementById('inline-booking-form');
   if (inlineBookingForm) inlineBookingForm.addEventListener('submit', handleFormSubmit);
 
-  /* ---------- 8. ЗАГРУЗКА КОНТЕНТА ---------- */
+  /* ---------- 9. ЗАГРУЗКА КОНТЕНТА ---------- */
   loadServices();
   loadCars();
 
