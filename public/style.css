@@ -110,7 +110,7 @@ header {
 .service-card p { color: var(--grey); font-size: 14px; line-height: 1.5; }
 
 /* ================= ГАЛЕРЕЯ ================= */
-.gallery { width: 120vw; display: flex; flex-direction: column; justify-content: center; }
+.gallery { width: 120vw; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
 .gallery-grid { display: flex; gap: 40px; margin-top: 60px; height: 50vh; }
 .gallery-item { position: relative; width: 320px; height: 100%; overflow: hidden; border: 1px solid var(--border); flex-shrink: 0; cursor: pointer; transition: border-color 0.3s; }
 .gallery-item:hover { border-color: var(--red); }
