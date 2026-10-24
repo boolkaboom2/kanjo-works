@@ -130,7 +130,7 @@
   /* ---------- 6. АВТОРИЗАЦИЯ С ВЕРИФИКАЦИЕЙ ---------- */
   let authToken = localStorage.getItem('kanjo_token') || null;
   let currentUser = null;
-  let tempEmail = ''; // Для верификации
+  let tempEmail = ''; 
   const authModal = document.getElementById('auth-modal');
 
   function updateAuthUI() {
@@ -151,7 +151,7 @@
       const isReg = tab.dataset.mode === 'register';
       document.querySelectorAll('.reg-only').forEach(el => el.style.display = isReg ? 'block' : 'none');
       document.getElementById('auth-submit-btn').textContent = isReg ? 'СОЗДАТЬ АККАУНТ' : 'ВОЙТИ';
-      document.getElementById('auth-error').style.display = 'none'; // Сбрасываем ошибку
+      document.getElementById('auth-error').style.display = 'none';
     });
   });
 
@@ -187,9 +187,8 @@
         authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
         updateAuthUI(); authModal.classList.remove('open'); e.target.reset();
         showToast('Успешный вход в систему!', 'success');
-        loadProfile(); // Подтягиваем данные для автозаполнения
+        loadProfile();
       } else {
-        // Переходим на шаг верификации
         tempEmail = email;
         document.getElementById('auth-step-1').style.display = 'none';
         document.getElementById('auth-step-2').style.display = 'block';
@@ -200,7 +199,6 @@
     } finally { btn.textContent = isLogin ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'; }
   });
 
-  // Форма верификации
   document.getElementById('verify-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const code = document.getElementById('auth-code').value;
@@ -235,9 +233,7 @@
     if (!authToken) return;
     try {
       const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
-      if (res.ok) {
-        currentUser = await res.json();
-      } else { logout(); }
+      if (res.ok) { currentUser = await res.json(); } else { logout(); }
     } catch (err) { }
   }
   loadProfile();
@@ -246,7 +242,6 @@
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); });
 
-  // Вкладки ЛК
   document.getElementById('tab-btn-bookings').addEventListener('click', (e) => {
     e.target.classList.add('active'); document.getElementById('tab-btn-builds').classList.remove('active');
     document.getElementById('profile-tab-bookings').style.display = 'block'; document.getElementById('profile-tab-builds').style.display = 'none';
@@ -317,11 +312,10 @@
     modal.querySelectorAll('input[type="text"]')[1].value = text;
     modal.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
     
-    // АВТОЗАПОЛНЕНИЕ
     if (currentUser) {
       modal.querySelector('input[type="text"]').value = currentUser.name || '';
       modal.querySelector('input[type="tel"]').value = currentUser.phone || '';
-      modal.querySelector('.discount-hint').style.display = 'block'; // Показываем подсказку о скидке
+      modal.querySelector('.discount-hint').style.display = 'block';
     }
   });
 
@@ -336,8 +330,60 @@
     showToast('Сборка сохранена в гараже!', 'success');
   });
 
-  /* ---------- 8. ВИДЕО ---------- */
-  document.getElementById('credits-btn').addEventListener('click', () => { document.getElementById('video-modal').classList.add('open'); document.getElementById('credits-video').play(); });
-  document.querySelector('.close-video').addEventListener('click', () => { document.getElementById('video-modal').classList.remove('open'); document.getElementById('credits-video').pause(); });
+  /* ---------- 8. КАСТОМНЫЙ ВИДЕОПЛЕЕР ---------- */
+  const videoModal = document.getElementById('video-modal');
+  const video = document.getElementById('credits-video');
+  const playPauseBtn = document.getElementById('play-pause-btn');
+  const progressContainer = document.getElementById('progress-container');
+  const progressBar = document.getElementById('progress-bar');
+  const timeDisplay = document.getElementById('time-display');
+  const muteBtn = document.getElementById('mute-btn');
+
+  document.getElementById('credits-btn').addEventListener('click', () => {
+    videoModal.classList.add('open');
+    video.play();
+    playPauseBtn.textContent = '⏸';
+  });
+
+  function closeVideo() {
+    videoModal.classList.remove('open');
+    video.pause();
+  }
+
+  document.getElementById('close-video-btn').addEventListener('click', closeVideo);
+  videoModal.addEventListener('click', (e) => { if (e.target === videoModal) closeVideo(); });
+
+  playPauseBtn.addEventListener('click', () => {
+    if (video.paused) {
+      video.play();
+      playPauseBtn.textContent = '⏸';
+    } else {
+      video.pause();
+      playPauseBtn.textContent = '▶';
+    }
+  });
+
+  muteBtn.addEventListener('click', () => {
+    video.muted = !video.muted;
+    muteBtn.textContent = video.muted ? '🔇' : '🔊';
+  });
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  video.addEventListener('timeupdate', () => {
+    const percent = (video.currentTime / video.duration) * 100;
+    progressBar.style.width = `${percent}%`;
+    timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`;
+  });
+
+  progressContainer.addEventListener('click', (e) => {
+    const rect = progressContainer.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    video.currentTime = pos * video.duration;
+  });
 
 })();

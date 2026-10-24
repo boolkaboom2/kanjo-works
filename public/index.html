@@ -11,7 +11,6 @@
   <div id="preloader" class="preloader"><div class="preloader-content"><div class="loader-ring"></div><div class="loader-text">SYSTEM BOOTING<span class="dots">...</span></div><div class="loader-hint">WAKE UP ENGINE</div></div></div>
   <div class="noise"></div>
   
-  <!-- КОНТЕЙНЕР ДЛЯ УВЕДОМЛЕНИЙ -->
   <div id="toast-container"></div>
 
   <header>
@@ -30,7 +29,9 @@
       <div class="hero-content"><h1 class="glitch" data-text="SPEED">SPEED</h1><h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1><p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p><div class="scroll-hint"><span>SCROLL TO EXPLORE</span><span class="arrow">→</span></div></div>
       <div class="hero-bg"><img src="img/hero.jpg" alt="JDM Garage"></div>
     </section>
+    
     <section class="panel services"><div class="panel-title"><h2>OUR <br> SERVICES</h2><span class="kanji">サービス</span></div><div class="services-grid" id="services-grid"></div></section>
+    
     <section class="panel gallery"><div class="panel-title"><h2>THE <br> GARAGE</h2><span class="kanji">ガレージ</span></div><div class="gallery-grid" id="gallery-grid"></div></section>
     
     <section class="panel configurator">
@@ -55,7 +56,6 @@
       </div>
     </section>
 
-    <!-- СЕКЦИЯ КОНТАКТЫ (УЛУЧШЕНА) -->
     <section class="panel contact">
       <div class="contact-bg-text">KANJO</div>
       <div class="contact-layout">
@@ -84,7 +84,6 @@
     </section>
   </main>
 
-  <!-- МОДАЛКИ -->
   <div id="booking-modal" class="modal">
     <div class="modal-content">
       <button class="close-modal">✕</button>
@@ -121,7 +120,6 @@
     </div>
   </div>
 
-  <!-- АВТОРИЗАЦИЯ -->
   <div id="auth-modal" class="modal">
     <div class="modal-content">
       <button class="close-modal close-auth">✕</button>
@@ -158,7 +156,6 @@
     </div>
   </div>
 
-  <!-- ЛИЧНЫЙ КАБИНЕТ -->
   <div id="profile-modal" class="modal">
     <div class="modal-content wide" style="max-width: 800px;">
       <button class="close-modal close-profile">✕</button>
@@ -175,14 +172,27 @@
     </div>
   </div>
 
-  <!-- ВИДЕО -->
+  <!-- КАСТОМНЫЙ ВИДЕОПЛЕЕР -->
   <button id="credits-btn">CREATED WITH ❤️</button>
-  <div id="video-modal" class="modal">
-    <div class="modal-content" style="max-width: 800px; padding: 0; background: #000;">
-      <button class="close-modal close-video" style="color: white; z-index: 10;">✕</button>
-      <video id="credits-video" controls style="width: 100%; height: auto; display: block;">
-        <source src="img/Deep.mp4" type="video/mp4">
-      </video>
+  
+  <div id="video-modal" class="modal video-custom-modal">
+    <div class="modal-content">
+      <div class="video-wrapper">
+        <video id="credits-video" src="img/Deep.mp4"></video>
+        
+        <div class="custom-controls">
+          <button id="play-pause-btn" class="ctrl-btn">▶</button>
+          
+          <div class="progress-container" id="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          
+          <span id="time-display" class="time-display">0:00 / 0:00</span>
+          
+          <button id="mute-btn" class="ctrl-btn">🔊</button>
+          <button class="close-video ctrl-btn" id="close-video-btn">✕</button>
+        </div>
+      </div>
     </div>
   </div>
 
