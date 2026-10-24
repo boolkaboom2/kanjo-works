@@ -16,7 +16,6 @@ app.set('trust proxy', 1);
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-// Секретный ключ для токенов. В идеале добавить в .env, но для MVP сойдет и так.
 const JWT_SECRET = process.env.JWT_SECRET || 'kanjo_super_secret_key_123';
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
@@ -33,18 +32,14 @@ const pool = new Pool({
 // Инициализация БД
 async function initDB() {
   try {
-    // Таблица пользователей
     await pool.query(`CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      password_hash VARCHAR(255) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Обновляем таблицу bookings (добавляем user_id, если её нет)
     await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
       id SERIAL PRIMARY KEY, name VARCHAR(255), phone VARCHAR(50), car VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+    // Добавляем связь с пользователем, если её нет
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS cars (
@@ -56,6 +51,7 @@ async function initDB() {
       id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
     )`);
     
+    // Заполнение дефолтными данными
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
@@ -73,9 +69,9 @@ async function initDB() {
     const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
     if (parseInt(checkSrv.rows[0].count) === 0) {
       const initServices = [
-        ['01', 'ENGINE SWAP', 'Установка и настройка двигателей RB, 2JZ, SR20. Полная переборка.', 'Мы специализируемся на свапах легендарных двигателей. Установим 2JZ-GTE в ваш кузов или соберем SR20DET с нуля на кованых поршнях.', 'Снятие и дефектовка старого ДВС\nУстановка нового двигателя с подрамником\nИзготовление кастомного выхлопа\nНастройка ЭБУ и стендовая обкатка', 'от 250 000 ₽'],
-        ['02', 'AERO KIT', 'Установка обвесов. Подгонка по миллиметрам. Карбон и стеклопластик.', 'Аэродинамика решает всё. Установим широкие арки, агрессивные бампера и антикрыло.', 'Разметка и подрезка кузова\nУстановка расширителей арок\nМонтаж порогов и сплиттеров\nПокраска и финальная подгонка зазоров', 'от 120 000 ₽'],
-        ['03', 'ECU TUNING', 'Настройка топливных карт и зажигания на стенде. Максимальная отдача.', 'Стоковая прошивка — это ограничение. Мы настроим ваш мотор под конкретное топливо.', 'Установка программируемого ЭБУ (Link, Haltech)\nУстановка датчиков (лямбда, давление)\nСтендовые заезды и калибровка\nТест-драйв и логирование данных', 'от 80 000 ₽']
+        ['01', 'ENGINE SWAP', 'Установка и настройка двигателей RB, 2JZ, SR20. Полная переборка.', 'Мы специализируемся на свапах легендарных двигателей.', 'Снятие и дефектовка старого ДВС\nУстановка нового двигателя с подрамником\nИзготовление кастомного выхлопа\nНастройка ЭБУ и стендовая обкатка', 'от 250 000 ₽'],
+        ['02', 'AERO KIT', 'Установка обвесов. Подгонка по миллиметрам. Карбон и стеклопластик.', 'Аэродинамика решает всё.', 'Разметка и подрезка кузова\nУстановка расширителей арок\nМонтаж порогов и сплиттеров\nПокраска и финальная подгонка зазоров', 'от 120 000 ₽'],
+        ['03', 'ECU TUNING', 'Настройка топливных карт и зажигания на стенде. Максимальная отдача.', 'Стоковая прошивка — это ограничение.', 'Установка программируемого ЭБУ (Link, Haltech)\nУстановка датчиков (лямбда, давление)\nСтендовые заезды и калибровка\nТест-драйв и логирование данных', 'от 80 000 ₽']
       ];
       for (let s of initServices) {
         await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1, $2, $3, $4, $5, $6)`, s);
@@ -96,29 +92,23 @@ async function sendTelegramMessage(text) {
   } catch (error) { console.error('[TG ERROR]', error.message); }
 }
 
-// Middleware для проверки JWT (если пользователь авторизован)
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return next(); // Если нет токена, пропускаем (для гостей)
+  if (!token) return next();
 
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (!err) req.user = decoded; // Сохраняем данные юзера в запрос
+    if (!err) req.user = decoded;
     next();
   });
 };
 
 // --- АВТОРИЗАЦИЯ ---
-
 app.post('/api/auth/register', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Заполните все поля' });
-
   try {
     const hash = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      `INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email`,
-      [email, hash]
-    );
+    const result = await pool.query(`INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email`, [email, hash]);
     const user = result.rows[0];
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ token, user });
@@ -134,10 +124,8 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
     const user = result.rows[0];
     if (!user) return res.status(400).json({ error: 'Неверный email или пароль' });
-
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(400).json({ error: 'Неверный email или пароль' });
-
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, email: user.email } });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -158,14 +146,11 @@ app.get('/api/services', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Создание заявки (теперь с проверкой, авторизован ли юзер)
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 3 });
 app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   let { name, phone, car } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
-  
   const userId = req.user ? req.user.userId : null;
-
   try {
     await pool.query(`INSERT INTO bookings (name, phone, car, user_id) VALUES ($1, $2, $3, $4)`, [name, phone, car, userId]);
     res.status(201).json({ message: 'Заявка принята' });
@@ -173,7 +158,6 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Получить заявки текущего пользователя
 app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   try {
@@ -182,7 +166,7 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- АДМИН ПАНЕЛЬ (Без изменений) ---
+// --- АДМИН ПАНЕЛЬ ---
 const adminAuth = basicAuth({
   users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' },
   challenge: true,
@@ -197,5 +181,38 @@ app.get('/api/admin/bookings', adminAuth, async (req, res) => {
   res.json(result.rows);
 });
 
-app.post('/api/admin/cars', adminAuth, async (req, res) => { /* ... код без изменений ... */ });
-// (Остальные админские маршруты для машин и услуг оставь как были)
+app.post('/api/admin/cars', adminAuth, async (req, res) => {
+  const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
+  await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [title, spec, img, engine, hp, weight, drive, accel, description]);
+  res.status(201).json({ message: 'Car added' });
+});
+
+app.put('/api/admin/cars/:id', adminAuth, async (req, res) => {
+  const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body;
+  await pool.query(`UPDATE cars SET title=$1, spec=$2, img=$3, engine=$4, hp=$5, weight=$6, drive=$7, accel=$8, description=$9 WHERE id=$10`, [title, spec, img, engine, hp, weight, drive, accel, description, req.params.id]);
+  res.json({ message: 'Car updated' });
+});
+
+app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => {
+  await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]);
+  res.json({ message: 'Car deleted' });
+});
+
+app.post('/api/admin/services', adminAuth, async (req, res) => {
+  const { num, title, short, full_description, works, price } = req.body;
+  await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1,$2,$3,$4,$5,$6)`, [num, title, short, full_description, works, price]);
+  res.status(201).json({ message: 'Service added' });
+});
+
+app.put('/api/admin/services/:id', adminAuth, async (req, res) => {
+  const { num, title, short, full_description, works, price } = req.body;
+  await pool.query(`UPDATE services SET num=$1, title=$2, short=$3, full_description=$4, works=$5, price=$6 WHERE id=$7`, [num, title, short, full_description, works, price, req.params.id]);
+  res.json({ message: 'Service updated' });
+});
+
+app.delete('/api/admin/services/:id', adminAuth, async (req, res) => {
+  await pool.query(`DELETE FROM services WHERE id = $1`, [req.params.id]);
+  res.json({ message: 'Service deleted' });
+});
+
+app.listen(PORT, () => console.log(`[SERVER] Запущен на порту ${PORT}`));
