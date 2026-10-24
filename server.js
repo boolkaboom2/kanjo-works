@@ -8,10 +8,10 @@ const rateLimit = require('express-rate-limit');
 const basicAuth = require('express-basic-auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
 app.set('trust proxy', 1);
 
 const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
@@ -24,6 +24,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public'))); 
 
+// --- НАСТРОЙКА ПОЧТЫ ---
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -33,12 +42,10 @@ const pool = new Pool({
 async function initDB() {
   try {
     await pool.query(`CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL, 
+      name VARCHAR(255), phone VARCHAR(50), verification_code VARCHAR(10), is_verified BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
-    // Добавляем имя и телефон в профиль пользователя
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255)`);
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
-
     await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
       id SERIAL PRIMARY KEY, name VARCHAR(255), phone VARCHAR(50), car VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
@@ -49,34 +56,30 @@ async function initDB() {
     await pool.query(`CREATE TABLE IF NOT EXISTS saved_builds (
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), car_name VARCHAR(255), build_text TEXT, total_hp INTEGER, total_price INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
-
     await pool.query(`CREATE TABLE IF NOT EXISTS cars (
       id SERIAL PRIMARY KEY, title VARCHAR(255), spec VARCHAR(255), img VARCHAR(255), engine VARCHAR(255), hp VARCHAR(255), weight VARCHAR(255), drive VARCHAR(255), accel VARCHAR(255), description TEXT
     )`);
     await pool.query(`CREATE TABLE IF NOT EXISTS services (
       id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
     )`);
-    
-    // Дефолтные данные (без изменений)
+
+    // Дефолтные данные
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
       const initialCars = [
-        ['NISSAN SILVIA S15', 'SR20DET // 450HP', 'img/car1.jpg', 'SR20DET (2.0L Turbo)', '450 HP', '1240 kg', 'RWD', '4.5 sec', 'Классика дрифта.'],
+        ['NISSAN SILVIA S15', 'SR20DET // 450HP', 'img/car1.jpg', 'SR20DET', '450 HP', '1240 kg', 'RWD', '4.5 sec', 'Классика дрифта.'],
         ['TOYOTA SUPRA MK4', '2JZ-GTE // 800HP', 'img/car2.jpg', '2JZ-GTE', '800 HP', '1510 kg', 'RWD', '3.8 sec', 'Легенда.'],
-        ['MAZDA RX-7 FD3S', '13B-REW // 500HP', 'img/car3.jpg', '13B-REW', '500 HP', '1270 kg', 'RWD', '4.0 sec', 'Роторный двигатель.'],
-        ['HONDA NSX NA1', 'C30A // 350HP', 'img/car4.jpg', 'C30A', '350 HP', '1370 kg', 'RWD', '4.8 sec', 'Японский суперкар.'],
-        ['SUBARU IMPREZA 22B', 'EJ22 // 400HP', 'img/car5.jpg', 'EJ22', '400 HP', '1270 kg', 'AWD', '4.2 sec', 'Раллийная легенда.']
+        ['MAZDA RX-7 FD3S', '13B-REW // 500HP', 'img/car3.jpg', '13B-REW', '500 HP', '1270 kg', 'RWD', '4.0 sec', 'Роторный.'],
+        ['HONDA NSX NA1', 'C30A // 350HP', 'img/car4.jpg', 'C30A', '350 HP', '1370 kg', 'RWD', '4.8 sec', 'Суперкар.'],
+        ['SUBARU IMPREZA 22B', 'EJ22 // 400HP', 'img/car5.jpg', 'EJ22', '400 HP', '1270 kg', 'AWD', '4.2 sec', 'Ралли.']
       ];
       for (let c of initialCars) await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, c);
     }
     const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
     if (parseInt(checkSrv.rows[0].count) === 0) {
-      const initServices = [
-        ['01', 'ENGINE SWAP', 'Установка и настройка двигателей RB, 2JZ, SR20.', 'Свапы двигателей.', 'Снятие и дефектовка\nУстановка\nНастройка', 'от 250 000 ₽'],
-        ['02', 'AERO KIT', 'Установка обвесов. Карбон и стеклопластик.', 'Аэродинамика.', 'Разметка\nУстановка\nПокраска', 'от 120 000 ₽'],
-        ['03', 'ECU TUNING', 'Настройка топливных карт и зажигания.', 'Прошивка.', 'Установка ЭБУ\nСтенд\nТест', 'от 80 000 ₽']
-      ];
-      for (let s of initServices) await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1,$2,$3,$4,$5,$6)`, s);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('01', 'ENGINE SWAP', 'Свап двигателей.', 'Свапы.', 'Снятие\nУстановка', 'от 250 000 ₽')`);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('02', 'AERO KIT', 'Обвесы.', 'Аэродинамика.', 'Разметка\nПокраска', 'от 120 000 ₽')`);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('03', 'ECU TUNING', 'Прошивка.', 'Настройка.', 'Стенд\nТест', 'от 80 000 ₽')`);
     }
   } catch (err) { console.error('DB Init Error:', err); }
 }
@@ -89,35 +92,54 @@ async function sendTelegramMessage(text) {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'Markdown' })
     });
-  } catch (error) { console.error('[TG ERROR]', error.message); }
+  } catch (error) { }
 }
 
 const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return next();
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (!err) req.user = decoded;
-    next();
-  });
+  jwt.verify(token, JWT_SECRET, (err, decoded) => { if (!err) req.user = decoded; next(); });
 };
 
-// --- АВТОРИЗАЦИЯ ---
+// --- АВТОРИЗАЦИЯ С ВЕРИФИКАЦИЕЙ ---
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, phone } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Заполните все поля' });
   try {
+    const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (check.rows.length > 0) return res.status(400).json({ error: 'Email уже занят' });
+
     const hash = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      `INSERT INTO users (email, password_hash, name, phone) VALUES ($1, $2, $3, $4) RETURNING id, email, name, phone`, 
-      [email, hash, name, phone]
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-значный код
+    
+    await pool.query(
+      `INSERT INTO users (email, password_hash, name, phone, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, FALSE)`, 
+      [email, hash, name, phone, code]
     );
+
+    // Отправка кода на почту
+    await transporter.sendMail({
+      from: '"KANJO WORKS" <no-reply@kanjoworks.jp>',
+      to: email,
+      subject: 'Код подтверждения регистрации',
+      text: `Ваш код для завершения регистрации: ${code}`
+    });
+
+    res.status(201).json({ message: 'Код отправлен на почту', email });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/auth/verify', async (req, res) => {
+  const { email, code } = req.body;
+  try {
+    const result = await pool.query(`SELECT * FROM users WHERE email = $1 AND verification_code = $2`, [email, code]);
+    if (result.rows.length === 0) return res.status(400).json({ error: 'Неверный код' });
+
     const user = result.rows[0];
+    await pool.query(`UPDATE users SET is_verified = TRUE, verification_code = NULL WHERE id = $1`, [user.id]);
+    
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user });
-  } catch (err) {
-    if (err.code === '23505') return res.status(400).json({ error: 'Этот email уже занят' });
-    res.status(500).json({ error: err.message });
-  }
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/auth/login', async (req, res) => {
@@ -125,43 +147,46 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
     const user = result.rows[0];
-    if (!user) return res.status(400).json({ error: 'Неверный email или пароль' });
+    if (!user || !user.is_verified) return res.status(400).json({ error: 'Аккаунт не найден или не подтвержден' });
+    
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(400).json({ error: 'Неверный email или пароль' });
+    if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
+    
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Восстановление пароля (отправка в ТГ)
+// --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
 app.post('/api/auth/forgot-password', async (req, res) => {
   const { email } = req.body;
   try {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
     if (result.rows.length === 0) return res.status(400).json({ error: 'Пользователь не найден' });
 
-    // Генерируем новый пароль
     const newPass = Math.random().toString(36).slice(-8);
     const hash = await bcrypt.hash(newPass, 10);
     await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [hash, email]);
 
-    // Отправляем в ТГ
-    sendTelegramMessage(`🔑 *ВОССТАНОВЛЕНИЕ ПАРОЛЯ* 🔑\n\n👤 *Email:* ${email}\n🔑 *Новый пароль:* \`${newPass}\``);
-    
-    res.json({ message: 'Новый пароль отправлен в Telegram' });
+    // Отправка на почту пользователю
+    await transporter.sendMail({
+      from: '"KANJO WORKS" <no-reply@kanjoworks.jp>',
+      to: email,
+      subject: 'Восстановление пароля',
+      text: `Ваш новый пароль: ${newPass}`
+    });
+
+    res.json({ message: 'Новый пароль отправлен на вашу почту' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// Получение профиля
 app.get('/api/user/profile', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
-  try {
-    const result = await pool.query('SELECT id, email, name, phone FROM users WHERE id = $1', [req.user.userId]);
-    res.json(result.rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  const result = await pool.query('SELECT id, email, name, phone FROM users WHERE id = $1', [req.user.userId]);
+  res.json(result.rows[0]);
 });
 
-// --- ОСТАЛЬНОЕ API (без изменений) ---
+// --- ОСТАЛЬНОЕ API ---
 app.get('/api/cars', async (req, res) => { const r = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(r.rows); });
 app.get('/api/services', async (req, res) => { const r = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(r.rows); });
 
@@ -170,9 +195,18 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   let { name, phone, car, price } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
   const userId = req.user ? req.user.userId : null;
+  
   let finalPrice = parseInt(price) || null;
   let discountText = '';
-  if (userId && finalPrice) { finalPrice = Math.round(finalPrice * 0.95); discountText = '\n💸 *Скидка 5%*'; }
+  
+  if (userId && finalPrice) {
+    // Проверка: это первая заявка?
+    const checkOrders = await pool.query('SELECT COUNT(*) FROM bookings WHERE user_id = $1', [userId]);
+    if (parseInt(checkOrders.rows[0].count) === 0) {
+      finalPrice = Math.round(finalPrice * 0.95);
+      discountText = '\n💸 *Скидка 5% применена (Первый проект)*';
+    }
+  }
 
   try {
     await pool.query(`INSERT INTO bookings (name, phone, car, user_id, price) VALUES ($1, $2, $3, $4, $5)`, [name, phone, car, userId, finalPrice]);
@@ -200,14 +234,18 @@ app.get('/api/user/builds', authMiddleware, async (req, res) => {
   res.json(r.rows);
 });
 
+app.delete('/api/user/builds/:id', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  await pool.query(`DELETE FROM saved_builds WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.userId]);
+  res.json({ message: 'Удалено' });
+});
+
 // --- АДМИНКА ---
 const adminAuth = basicAuth({ users: { [process.env.ADMIN_USER || 'admin']: process.env.ADMIN_PASS || 'kanjo123' }, challenge: true });
 app.get('/admin', adminAuth, (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')); });
 app.get('/api/admin/bookings', adminAuth, async (req, res) => { const r = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(r.rows); });
 app.put('/api/admin/bookings/:id/status', adminAuth, async (req, res) => { await pool.query(`UPDATE bookings SET status = $1 WHERE id = $2`, [req.body.status, req.params.id]); res.json({ message: 'OK' }); });
 app.get('/api/admin/clients', adminAuth, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
-
-// Управление контентом (без изменений)
 app.post('/api/admin/cars', adminAuth, async (req, res) => { const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body; await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [title, spec, img, engine, hp, weight, drive, accel, description]); res.status(201).json({ message: 'OK' }); });
 app.put('/api/admin/cars/:id', adminAuth, async (req, res) => { const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body; await pool.query(`UPDATE cars SET title=$1, spec=$2, img=$3, engine=$4, hp=$5, weight=$6, drive=$7, accel=$8, description=$9 WHERE id=$10`, [title, spec, img, engine, hp, weight, drive, accel, description, req.params.id]); res.json({ message: 'OK' }); });
 app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });

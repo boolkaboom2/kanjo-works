@@ -8,15 +8,11 @@
 </head>
 <body>
 
-  <div id="preloader" class="preloader">
-    <div class="preloader-content">
-      <div class="loader-ring"></div>
-      <div class="loader-text">SYSTEM BOOTING<span class="dots">...</span></div>
-      <div class="loader-hint">WAKE UP ENGINE</div>
-    </div>
-  </div>
-
+  <div id="preloader" class="preloader"><div class="preloader-content"><div class="loader-ring"></div><div class="loader-text">SYSTEM BOOTING<span class="dots">...</span></div><div class="loader-hint">WAKE UP ENGINE</div></div></div>
   <div class="noise"></div>
+  
+  <!-- КОНТЕЙНЕР ДЛЯ УВЕДОМЛЕНИЙ -->
+  <div id="toast-container"></div>
 
   <header>
     <div class="logo" id="logo-btn">KANJO<span>_</span>WORKS</div>
@@ -24,28 +20,19 @@
       <span>TOKYO // 35.6762° N, 139.6503° E</span>
       <span id="clock">00:00:00</span>
       <button id="login-btn" class="header-btn">ВОЙТИ</button>
-      <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-      </button>
-      <button id="sound-toggle" class="sound-btn" title="Звук вкл/выкл">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
-      </button>
+      <button id="profile-btn" class="sound-btn" title="Личный кабинет" style="display: none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></button>
+      <button id="sound-toggle" class="sound-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>
     </div>
   </header>
 
   <main id="scroll-container">
-    <!-- Секции (БЕЗ ИЗМЕНЕНИЙ) -->
     <section class="panel hero">
-      <div class="hero-content">
-        <h1 class="glitch" data-text="SPEED">SPEED</h1>
-        <h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1>
-        <p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p>
-        <div class="scroll-hint"><span>SCROLL TO EXPLORE</span><span class="arrow">→</span></div>
-      </div>
+      <div class="hero-content"><h1 class="glitch" data-text="SPEED">SPEED</h1><h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1><p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p><div class="scroll-hint"><span>SCROLL TO EXPLORE</span><span class="arrow">→</span></div></div>
       <div class="hero-bg"><img src="img/hero.jpg" alt="JDM Garage"></div>
     </section>
     <section class="panel services"><div class="panel-title"><h2>OUR <br> SERVICES</h2><span class="kanji">サービス</span></div><div class="services-grid" id="services-grid"></div></section>
     <section class="panel gallery"><div class="panel-title"><h2>THE <br> GARAGE</h2><span class="kanji">ガレージ</span></div><div class="gallery-grid" id="gallery-grid"></div></section>
+    
     <section class="panel configurator">
       <div class="panel-title"><h2>BUILD YOUR <br> LEGEND</h2><span class="kanji">チューニング</span></div>
       <div class="config-layout">
@@ -67,20 +54,28 @@
         </div>
       </div>
     </section>
+
+    <!-- СЕКЦИЯ КОНТАКТЫ (УЛУЧШЕНА) -->
     <section class="panel contact">
+      <div class="contact-bg-text">KANJO</div>
       <div class="contact-layout">
-        <div class="contact-info"><h2>READY <br>TO RACE?</h2><p>Запишись на консультацию в наш бокс.</p>
-          <div class="info-block"><h3>LOCATION</h3><p>Tokyo, Shibuya City<br>2-Chome, 14-5</p></div>
-          <div class="info-block"><h3>CONTACT</h3><p>+81 90 1234 5678<br>race@kanjoworks.jp</p></div>
-          <div class="socials"><a href="#">INSTAGRAM</a><a href="#">YOUTUBE</a><a href="#">TELEGRAM</a></div>
+        <div class="contact-info">
+          <h2>READY <br>TO RACE?</h2>
+          <p>Запишись на консультацию в наш бокс. Мы находимся в промзоне Токио, найти нас легко по звуку выхлопа.</p>
+          <div class="info-row">
+            <div class="info-block"><h3>LOCATION</h3><p>Tokyo, Shibuya City<br>2-Chome, 14-5</p></div>
+            <div class="info-block"><h3>CONTACT</h3><p>+81 90 1234 5678<br>race@kanjoworks.jp</p></div>
+          </div>
+          <div class="socials"><a href="https://www.instagram.com" target="_blank">INSTAGRAM</a><a href="https://www.youtube.com" target="_blank">YOUTUBE</a><a href="https://telegram.org" target="_blank">TELEGRAM</a></div>
         </div>
         <div class="contact-form-wrap">
           <h3>BOOK A SLOT</h3>
           <form id="inline-booking-form" novalidate>
             <div class="input-group"><input type="text" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
-            <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required><span class="error-msg"></span></div>
+            <div class="input-group"><input type="tel" class="phone-input" placeholder="+7 (___) ___-__-__" required><span class="error-msg"></span></div>
             <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required><span class="error-msg"></span></div>
             <input type="hidden" class="booking-price-input">
+            <div class="discount-hint" style="display: none; color: #10b981; font-size: 12px; margin-bottom: 10px;">Скидка 5% применена!</div>
             <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
           </form>
         </div>
@@ -89,7 +84,7 @@
     </section>
   </main>
 
-  <!-- МОДАЛКА BOOK A SLOT -->
+  <!-- МОДАЛКИ -->
   <div id="booking-modal" class="modal">
     <div class="modal-content">
       <button class="close-modal">✕</button>
@@ -97,15 +92,15 @@
       <p>Оставь данные, и мы свяжемся с тобой.</p>
       <form id="booking-form" novalidate>
         <div class="input-group"><input type="text" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
-        <div class="input-group"><input type="tel" placeholder="PHONE NUMBER" required><span class="error-msg"></span></div>
+        <div class="input-group"><input type="tel" class="phone-input" placeholder="+7 (___) ___-__-__" required><span class="error-msg"></span></div>
         <div class="input-group"><input type="text" placeholder="CAR MODEL" required><span class="error-msg"></span></div>
         <input type="hidden" class="booking-price-input">
+        <div class="discount-hint" style="display: none; color: #10b981; font-size: 12px; margin-bottom: 10px;">Скидка 5% применена!</div>
         <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
       </form>
     </div>
   </div>
 
-  <!-- ОСТАЛЬНЫЕ МОДАЛКИ (Услуги, Машины, Авторизация, ЛК) -->
   <div id="service-modal" class="modal">
     <div class="modal-content wide"><button class="close-modal">✕</button><h2 id="srv-title">SERVICE</h2>
       <div class="srv-details"><p id="srv-desc" class="srv-desc">Описание...</p><ul id="srv-list" class="srv-list"></ul>
@@ -134,27 +129,31 @@
         <button class="auth-tab active" data-mode="login">ВХОД</button>
         <button class="auth-tab" data-mode="register">РЕГИСТРАЦИЯ</button>
       </div>
-      <div style="text-align: center; margin-bottom: 20px;">
-        <p style="color: var(--red); font-size: 13px; font-weight: bold;">Зарегистрируйтесь и получите скидку 5% на первый проект!</p>
+      
+      <div id="auth-step-1">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <p style="color: var(--red); font-size: 13px; font-weight: bold;">Зарегистрируйтесь и получите скидку 5% на первый проект!</p>
+        </div>
+        <form id="auth-form" novalidate>
+          <div class="input-group reg-only" style="display: none;"><input type="text" id="auth-name" placeholder="ВАШЕ ИМЯ"><span class="error-msg"></span></div>
+          <div class="input-group reg-only" style="display: none;"><input type="tel" id="auth-phone" class="phone-input" placeholder="+7 (___) ___-__-__"><span class="error-msg"></span></div>
+          <div class="input-group"><input type="email" id="auth-email" placeholder="EMAIL" required><span class="error-msg"></span></div>
+          <div class="input-group"><input type="password" id="auth-password" placeholder="ПАРОЛЬ" required><span class="error-msg"></span></div>
+          <button type="submit" id="auth-submit-btn" class="btn-racing full-width">ВОЙТИ</button>
+        </form>
+        <div style="text-align: center; margin-top: 15px;">
+          <a href="#" id="forgot-pass-btn" style="color: var(--grey); font-size: 12px; text-decoration: underline;">Забыли пароль?</a>
+        </div>
       </div>
-      <form id="auth-form" novalidate>
-        <div class="input-group" id="reg-name-group" style="display: none;">
-          <input type="text" id="auth-name" placeholder="ВАШЕ ИМЯ"><span class="error-msg"></span>
-        </div>
-        <div class="input-group" id="reg-phone-group" style="display: none;">
-          <input type="tel" id="auth-phone" placeholder="ТЕЛЕФОН"><span class="error-msg"></span>
-        </div>
-        <div class="input-group">
-          <input type="email" id="auth-email" placeholder="EMAIL" required><span class="error-msg"></span>
-        </div>
-        <div class="input-group">
-          <input type="password" id="auth-password" placeholder="ПАРОЛЬ" required><span class="error-msg"></span>
-        </div>
-        <button type="submit" id="auth-submit-btn" class="btn-racing full-width">ВОЙТИ</button>
-      </form>
-      <div style="text-align: center; margin-top: 15px;">
-        <a href="#" id="forgot-pass-btn" style="color: var(--grey); font-size: 12px; text-decoration: underline;">Забыли пароль?</a>
+
+      <div id="auth-step-2" style="display: none;">
+        <p style="text-align: center; margin-bottom: 20px;">Мы отправили код на вашу почту. Введите его ниже для подтверждения.</p>
+        <form id="verify-form" novalidate>
+          <div class="input-group"><input type="text" id="auth-code" placeholder="6-ЗНАЧНЫЙ КОД" required><span class="error-msg"></span></div>
+          <button type="submit" id="verify-submit-btn" class="btn-racing full-width">ПОДТВЕРДИТЬ</button>
+        </form>
       </div>
+
       <p id="auth-error" style="color: red; font-size: 12px; text-align: center; margin-top: 10px; display: none;"></p>
     </div>
   </div>
@@ -176,14 +175,13 @@
     </div>
   </div>
 
-  <!-- МОДАЛКА ВИДЕО -->
+  <!-- ВИДЕО -->
   <button id="credits-btn">CREATED WITH ❤️</button>
   <div id="video-modal" class="modal">
     <div class="modal-content" style="max-width: 800px; padding: 0; background: #000;">
       <button class="close-modal close-video" style="color: white; z-index: 10;">✕</button>
       <video id="credits-video" controls style="width: 100%; height: auto; display: block;">
         <source src="img/Deep.mp4" type="video/mp4">
-        Ваш браузер не поддерживает видео.
       </video>
     </div>
   </div>
