@@ -94,23 +94,6 @@
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
       osc.start(); osc.stop(audioCtx.currentTime + 0.25);
     }
-    else if (type === 'car') {
-      const now = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      
-      osc.type = 'triangle'; 
-      osc.frequency.setValueAtTime(600, now); 
-      osc.frequency.exponentialRampToValueAtTime(150, now + 0.15); 
-      
-      gain.gain.setValueAtTime(0.3, now); 
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-      
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.15);
-    }
   }
 
   document.body.addEventListener('click', initAudio, { once: true });
@@ -134,7 +117,8 @@
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${c.img}" alt="${c.title}"><div class="gallery-item-info"><h4>${c.title}</h4><p>${c.spec}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
-        const car = carsData[item.dataset.index]; playSound('car'); 
+        const car = carsData[item.dataset.index]; 
+        playSound('click'); // ИСПРАВЛЕНИЕ: Теперь звук как у кнопок
         document.getElementById('cm-img').src = car.img; document.getElementById('cm-title').textContent = car.title; document.getElementById('cm-spec').textContent = car.spec;
         document.getElementById('cm-engine').textContent = car.engine; document.getElementById('cm-hp').textContent = car.hp; document.getElementById('cm-weight').textContent = car.weight;
         document.getElementById('cm-drive').textContent = car.drive; document.getElementById('cm-accel').textContent = car.accel; document.getElementById('cm-desc').textContent = car.description;
@@ -148,6 +132,9 @@
           ${c.title}
         </div>
       `).join('');
+
+      // ИСПРАВЛЕНИЕ: Останавливаем скролл страницы при скролле внутри списка
+      optionsContainer.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
 
       document.querySelectorAll('.select-option').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -196,7 +183,6 @@
   document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeAllModals(); }));
   document.querySelectorAll('.open-booking').forEach(b => b.addEventListener('click', () => { closeAllModals(); document.getElementById('booking-modal').classList.add('open'); playSound('modal'); }));
 
-  // Кастомный confirm
   const confirmModal = document.getElementById('confirm-modal');
   const confirmText = document.getElementById('confirm-text');
   let confirmCallback = null;
@@ -363,7 +349,6 @@
       const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
       if (res.ok) { 
         currentUser = await res.json(); 
-        // Проверяем заказы для скидки
         const bookRes = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
         const bookings = await bookRes.json();
         currentUser.hasOrders = bookings.length > 0;
@@ -410,7 +395,6 @@
     `).join('') : '<p>Гараж пуст. Соберите свою легенду!</p>';
   }
 
-  // Замена стандартного confirm на кастомный
   window.deleteBuild = async (id) => {
     showConfirm('Удалить сборку?', async () => {
       await fetch(`/api/user/builds/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });

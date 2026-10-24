@@ -86,7 +86,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .config-group { margin-bottom: 40px; }
 .config-group label { display: block; font-family: var(--font-display); font-size: 24px; color: var(--red); margin-bottom: 16px; }
 
-/* КАСТОМНЫЙ СЕЛЕКТ */
 .custom-select { position: relative; width: 100%; user-select: none; }
 .select-trigger { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: transparent; border: 1px solid var(--border); color: var(--text); font-family: var(--font-body); font-size: 16px; cursor: pointer; transition: border-color 0.3s; }
 .custom-select.open .select-trigger { border-color: var(--red); }
@@ -125,14 +124,17 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .contact-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .contact-info h2 { font-family: var(--font-display); font-size: 80px; line-height: 0.9; margin: 0 0 20px; color: var(--red); }
 .contact-info > p { color: var(--grey); font-size: 16px; margin-bottom: 40px; max-width: 300px; }
-.info-row { display: flex; gap: 40px; margin-bottom: 40px; }
+.info-row { display: flex; gap: 40px; margin-bottom: 20px; }
 .info-block h3 { font-family: 'Courier New', monospace; font-size: 12px; color: var(--grey); margin-bottom: 8px; }
 .info-block p { font-size: 16px; line-height: 1.4; margin: 0; }
 .contact-form-wrap { flex: 1; background: #111; padding: 40px; border: 1px solid var(--border); display: flex; flex-direction: column; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .contact-form-wrap h3 { font-family: var(--font-display); font-size: 32px; color: var(--text); margin-bottom: 24px; }
-.socials { display: flex; gap: 16px; margin-top: auto; }
+
+/* ИСПРАВЛЕНИЕ: Соцсети под контактами */
+.socials { display: flex; gap: 16px; margin-top: 20px; }
 .socials a { font-family: 'Courier New', monospace; font-size: 12px; color: var(--grey); transition: color 0.2s; }
 .socials a:hover { color: var(--red); }
+
 .contact-footer { border-top: 1px solid var(--border); padding-top: 24px; font-family: 'Courier New', monospace; font-size: 12px; color: var(--grey); text-align: center; position: relative; z-index: 1; }
 
 .btn-racing { padding: 16px 40px; background: transparent; color: var(--red); border: 1px solid var(--red); font-family: var(--font-display); font-size: 24px; cursor: pointer; position: relative; transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; }
@@ -232,7 +234,6 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
 .progress-bar::after { content: ''; position: absolute; right: -6px; top: -4px; width: 12px; height: 12px; background: var(--red); border-radius: 50%; opacity: 0; transition: opacity 0.2s; }
 .progress-container:hover .progress-bar::after { opacity: 1; }
 
-/* ================= МОБИЛЬНАЯ ВЕРСИЯ ================= */
 @media (max-width: 1024px) {
   #scroll-container { display: block; height: auto; overflow: visible; }
   body { overflow-y: auto; height: auto; }
@@ -264,7 +265,7 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
   header { padding: 16px 20px; }
   .logo { font-size: 20px; }
   .header-info { display: flex; gap: 10px; }
-  .desktop-only { display: none; } /* Скрываем текст и часы на телефоне */
+  .desktop-only { display: none; }
   .auth-tabs { flex-direction: column; border-bottom: none; gap: 10px; }
   .auth-tab { border: 1px solid var(--border); border-radius: 4px; }
   .auth-tab.active { border-color: var(--red); }
