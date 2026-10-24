@@ -29,21 +29,29 @@ document.addEventListener('DOMContentLoaded', () => {
   const carForm = document.getElementById('car-form');
   let allCars = [];
 
-  async function loadCars() {
+    async function loadCars() {
     const tbody = document.getElementById('cars-list');
     try {
       const res = await fetch('/api/cars');
       allCars = await res.json();
-      tbody.innerHTML = allCars.map(c => `
+      
+      tbody.innerHTML = allCars.map(c => {
+        // Проверяем, начинается ли ссылка с http (внешняя) или это локальный путь
+        const imgUrl = c.img.startsWith('http') ? c.img : `/${c.img}`;
+
+        return `
         <tr>
-          <td>${c.id}</td><td><img src="${c.img}"></td><td>${c.title}</td><td>${c.spec}</td>
+          <td>${c.id}</td>
+          <td><img src="${imgUrl}" alt="${c.title}"></td>
+          <td>${c.title}</td>
+          <td>${c.spec}</td>
           <td>
             <span class="action-link" onclick="openEditCar(${c.id})">РЕДАКТИРОВАТЬ</span>
             <span class="action-link delete" onclick="deleteCar(${c.id})">УДАЛИТЬ</span>
           </td>
         </tr>
-      `).join('');
-    } catch (err) { console.error(err); }
+      `}).join('');
+    } catch (err) { console.error('Ошибка загрузки машин', err); }
   }
 
   document.getElementById('btn-add-car').addEventListener('click', () => {
