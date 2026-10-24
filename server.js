@@ -108,7 +108,6 @@ app.post('/api/auth/register', async (req, res) => {
       if (check.rows[0].is_verified) {
         return res.status(400).json({ error: 'Этот email уже зарегистрирован. Попробуйте войти.' });
       } else {
-        // Обновляем данные, если аккаунт есть, но не подтвержден
         await pool.query(
           `UPDATE users SET password_hash = $1, name = $2, phone = $3, verification_code = $4 WHERE email = $5`, 
           [hash, name, phone, code, email]
@@ -223,11 +222,23 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   res.json(r.rows);
 });
 
+// ИСПРАВЛЕНИЕ 1: Проверка на дубликат сборки перед сохранением
 app.post('/api/user/save-build', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   const { car_name, build_text, total_hp, total_price } = req.body;
-  await pool.query(`INSERT INTO saved_builds (user_id, car_name, build_text, total_hp, total_price) VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, car_name, build_text, total_hp, total_price]);
-  res.status(201).json({ message: 'Сборка сохранена' });
+  
+  try {
+    const check = await pool.query(
+      `SELECT * FROM saved_builds WHERE user_id = $1 AND car_name = $2 AND build_text = $3 AND total_hp = $4`,
+      [req.user.userId, car_name, build_text, total_hp]
+    );
+    if (check.rows.length > 0) {
+      return res.status(400).json({ error: 'Эта сборка уже есть в гараже' });
+    }
+    
+    await pool.query(`INSERT INTO saved_builds (user_id, car_name, build_text, total_hp, total_price) VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, car_name, build_text, total_hp, total_price]);
+    res.status(201).json({ message: 'Сборка сохранена' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/user/builds', authMiddleware, async (req, res) => {

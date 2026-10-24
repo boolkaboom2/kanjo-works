@@ -31,7 +31,6 @@
     const container = document.getElementById('toast-container');
     const creditsBtn = document.getElementById('credits-btn');
     
-    // Прячем кнопку при появлении уведомления
     if (creditsBtn) creditsBtn.classList.add('hidden');
 
     const toast = document.createElement('div');
@@ -45,7 +44,6 @@
       toast.classList.remove('show');
       setTimeout(() => {
         toast.remove();
-        // Если это было последнее уведомление, возвращаем кнопку на место
         if (container.children.length === 0 && creditsBtn) {
           creditsBtn.classList.remove('hidden');
         }
@@ -68,7 +66,7 @@
     input.addEventListener('blur', (e) => { if (e.target.value === '+7 (') e.target.value = ''; });
   });
 
-  /* ---------- 3. ЗВУКИ (V8 + ТУРБИНА) ---------- */
+  /* ---------- 3. ЗВУКИ (ПРИЯТНЫЙ ЗВУК) ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx, isSoundOn = true;
   function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   
@@ -96,45 +94,31 @@
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
       osc.start(); osc.stop(audioCtx.currentTime + 0.25);
     }
+    // ИСПРАВЛЕНИЕ 2: Приятный звук (двойной аккорд) вместо звука машины
     else if (type === 'car') {
       const now = audioCtx.currentTime;
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
       
-      const osc1 = audioCtx.createOscillator(); 
-      const osc2 = audioCtx.createOscillator(); 
-      const osc3 = audioCtx.createOscillator(); 
-      const engineGain = audioCtx.createGain();
-      const filter = audioCtx.createBiquadFilter();
+      osc1.type = 'sine'; osc2.type = 'sine';
       
-      osc1.type = 'sawtooth'; osc2.type = 'square'; osc3.type = 'sawtooth';
+      // Приятный аккорд (A5 и C#6)
+      osc1.frequency.setValueAtTime(880, now); 
+      osc2.frequency.setValueAtTime(1108.73, now); 
       
-      osc1.frequency.setValueAtTime(40, now); osc1.frequency.linearRampToValueAtTime(80, now + 0.3); osc1.frequency.exponentialRampToValueAtTime(30, now + 0.8);
-      osc2.frequency.setValueAtTime(80, now); osc2.frequency.linearRampToValueAtTime(160, now + 0.3); osc2.frequency.exponentialRampToValueAtTime(60, now + 0.8);
-      osc3.frequency.setValueAtTime(160, now); osc3.frequency.linearRampToValueAtTime(320, now + 0.3); osc3.frequency.exponentialRampToValueAtTime(120, now + 0.8);
-
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(300, now); filter.frequency.linearRampToValueAtTime(1200, now + 0.3); filter.frequency.exponentialRampToValueAtTime(200, now + 0.8);
-      filter.Q.value = 2;
-
-      engineGain.gain.setValueAtTime(0, now); engineGain.gain.linearRampToValueAtTime(0.3, now + 0.1); engineGain.gain.linearRampToValueAtTime(0.1, now + 0.4); engineGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-
-      osc1.connect(filter); osc2.connect(filter); osc3.connect(filter);
-      filter.connect(engineGain); engineGain.connect(audioCtx.destination);
-      osc1.start(now); osc1.stop(now + 0.9); osc2.start(now); osc2.stop(now + 0.9); osc3.start(now); osc3.stop(now + 0.9);
-
-      const bufferSize = audioCtx.sampleRate * 0.4; 
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); 
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      osc1.frequency.exponentialRampToValueAtTime(440, now + 0.1);
+      osc2.frequency.exponentialRampToValueAtTime(554.37, now + 0.1);
       
-      const noiseNode = audioCtx.createBufferSource(); noiseNode.buffer = buffer;
-      const noiseFilter = audioCtx.createBiquadFilter(); 
-      noiseFilter.type = 'bandpass'; noiseFilter.frequency.setValueAtTime(3500, now + 0.45); noiseFilter.frequency.exponentialRampToValueAtTime(2000, now + 0.8); noiseFilter.Q.value = 3;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.1, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
       
-      const noiseGain = audioCtx.createGain();
-      noiseGain.gain.setValueAtTime(0.001, now); noiseGain.gain.setValueAtTime(0.001, now + 0.4); noiseGain.gain.linearRampToValueAtTime(0.15, now + 0.45); noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      osc1.connect(gain); osc2.connect(gain);
+      gain.connect(audioCtx.destination);
       
-      noiseNode.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
-      noiseNode.start(now); noiseNode.stop(now + 0.9);
+      osc1.start(now); osc2.start(now);
+      osc1.stop(now + 0.3); osc2.stop(now + 0.3);
     }
   }
 
@@ -181,6 +165,8 @@
   const closeAllModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
   document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', closeAllModals));
   document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeAllModals(); }));
+  
+  // Обработчик для всех кнопок "Заказать" (услуги и т.д.)
   document.querySelectorAll('.open-booking').forEach(b => b.addEventListener('click', () => { closeAllModals(); document.getElementById('booking-modal').classList.add('open'); playSound('modal'); }));
 
   const baseCarSelect = document.getElementById('base-car');
@@ -400,6 +386,7 @@
   document.getElementById('booking-form').addEventListener('submit', handleForm);
   document.getElementById('inline-booking-form').addEventListener('submit', handleForm);
 
+  // Кнопка "Обсудить" в конфигураторе
   document.getElementById('btn-book-build').addEventListener('click', () => {
     const car = baseCarSelect.options[baseCarSelect.selectedIndex].text;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
@@ -416,15 +403,41 @@
     }
   });
 
+  // ИСПРАВЛЕНИЕ 3: Кнопка "Хочу такую же" в модалке машины
+  document.getElementById('btn-book-current-car').addEventListener('click', () => {
+    const carName = document.getElementById('cm-title').textContent;
+    closeAllModals();
+    const bookingModal = document.getElementById('booking-modal');
+    bookingModal.classList.add('open');
+    playSound('modal');
+    const form = document.getElementById('booking-form');
+    
+    // Вписываем модель машины
+    form.querySelectorAll('input[type="text"]')[1].value = carName;
+    
+    // Вписываем данные пользователя
+    if (currentUser) {
+      form.querySelector('input[type="text"]').value = currentUser.name || '';
+      form.querySelector('input[type="tel"]').value = currentUser.phone || '';
+      form.querySelector('.discount-hint').style.display = 'block';
+    }
+  });
+
+  // Кнопка "В Гараж"
   document.getElementById('btn-save-build').addEventListener('click', async () => {
     if (!authToken) { authModal.classList.add('open'); return; }
     const car = baseCarSelect.options[baseCarSelect.selectedIndex].text;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
-    await fetch('/api/user/save-build', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-      body: JSON.stringify({ car_name: car, build_text: parts.join(' + ') || 'Сток', total_hp: parseInt(document.getElementById('total-hp').textContent), total_price: parseInt(document.getElementById('total-price').textContent.replace(/\s/g, '')) })
-    });
-    showToast('Сборка сохранена в гараже!', 'success');
+    
+    try {
+      const res = await fetch('/api/user/save-build', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ car_name: car, build_text: parts.join(' + ') || 'Сток', total_hp: parseInt(document.getElementById('total-hp').textContent), total_price: parseInt(document.getElementById('total-price').textContent.replace(/\s/g, '')) })
+      });
+      const data = await res.json();
+      if (res.ok) showToast('Сборка сохранена в гараже!', 'success');
+      else showToast(data.error || 'Ошибка', 'error');
+    } catch (err) { showToast('Ошибка сервера', 'error'); }
   });
 
   /* ---------- 8. КАСТОМНЫЙ ВИДЕОПЛЕЕР ---------- */
@@ -438,6 +451,7 @@
 
   document.getElementById('credits-btn').addEventListener('click', () => {
     videoModal.classList.add('open');
+    video.currentTime = 0; // ИСПРАВЛЕНИЕ 4: Начинаем с начала
     video.play();
     playPauseBtn.textContent = '⏸';
   });
