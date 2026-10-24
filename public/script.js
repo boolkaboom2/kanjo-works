@@ -129,6 +129,8 @@
     try {
       const res = await fetch('/api/cars');
       carsData = await res.json();
+      
+      // 1. Рендерим карточки в галерею
       galleryGrid.innerHTML = carsData.map((car, index) => `
         <div class="gallery-item" data-index="${index}">
           <img src="${car.img}" alt="${car.title}">
@@ -136,7 +138,24 @@
         </div>
       `).join('');
       attachCarClickEvents();
-    } catch (err) { console.error(err); }
+
+      // 2. Рендерим выпадающий список в конфигураторе
+      const baseCarSelect = document.getElementById('base-car');
+      if (baseCarSelect) {
+        baseCarSelect.innerHTML = carsData.map(car => {
+          // Извлекаем цифры мощности (например, из "450 HP" берем 450)
+          const hpNum = parseInt(car.hp) || 200; 
+          // Так как цены в базе машин нет, ставим базовую цену проекта (например, 1.5 млн)
+          const basePrice = 1500000; 
+          
+          return `<option value="${car.id}" data-hp="${hpNum}" data-price="${basePrice}">${car.title}</option>`;
+        }).join('');
+        
+        // Пересчитываем калькулятор с новыми данными
+        calculateConfig(); 
+      }
+
+    } catch (err) { console.error('Ошибка загрузки машин:', err); }
   }
 
   async function loadServices() {
