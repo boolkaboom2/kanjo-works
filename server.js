@@ -28,7 +28,6 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Инициализация БД
 async function initDB() {
   try {
     await pool.query(`CREATE TABLE IF NOT EXISTS users (
@@ -95,41 +94,26 @@ const authMiddleware = (req, res, next) => {
   jwt.verify(token, JWT_SECRET, (err, decoded) => { if (!err) req.user = decoded; next(); });
 };
 
-// --- АВТОРИЗАЦИЯ ---
 app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, phone } = req.body;
   try {
     const hash = await bcrypt.hash(password, 10);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
     const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     
     if (check.rows.length > 0) {
-      if (check.rows[0].is_verified) {
-        return res.status(400).json({ error: 'Этот email уже зарегистрирован. Попробуйте войти.' });
-      } else {
-        await pool.query(
-          `UPDATE users SET password_hash = $1, name = $2, phone = $3, verification_code = $4 WHERE email = $5`, 
-          [hash, name, phone, code, email]
-        );
+      if (check.rows[0].is_verified) return res.status(400).json({ error: 'Этот email уже зарегистрирован. Попробуйте войти.' });
+      else {
+        await pool.query(`UPDATE users SET password_hash = $1, name = $2, phone = $3, verification_code = $4 WHERE email = $5`, [hash, name, phone, code, email]);
         res.status(201).json({ message: 'Новый код отправлен', email, code });
         console.log(`[AUTH] Новый код для ${email}: ${code}`);
         return;
       }
     }
-
-    await pool.query(
-      `INSERT INTO users (email, password_hash, name, phone, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, FALSE)`, 
-      [email, hash, name, phone, code]
-    );
-    
+    await pool.query(`INSERT INTO users (email, password_hash, name, phone, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, FALSE)`, [email, hash, name, phone, code]);
     res.status(201).json({ message: 'Код отправлен', email, code });
     console.log(`[AUTH] Код подтверждения для ${email}: ${code}`);
-
-  } catch (err) { 
-    if (res.headersSent) return;
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { if (!res.headersSent) res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/auth/verify', async (req, res) => {
@@ -137,10 +121,8 @@ app.post('/api/auth/verify', async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1 AND verification_code = $2`, [email, code]);
     if (result.rows.length === 0) return res.status(400).json({ error: 'Неверный код' });
-
     const user = result.rows[0];
     await pool.query(`UPDATE users SET is_verified = TRUE, verification_code = NULL WHERE id = $1`, [user.id]);
-    
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -152,14 +134,9 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
     const user = result.rows[0];
     if (!user) return res.status(400).json({ error: 'Неверный email или пароль' });
-    
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
-
-    if (!user.is_verified) {
-      return res.status(403).json({ error: 'Аккаунт не подтвержден', needsVerify: true, email });
-    }
-    
+    if (!user.is_verified) return res.status(403).json({ error: 'Аккаунт не подтвержден', needsVerify: true, email });
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -170,17 +147,12 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM users WHERE email = $1`, [email]);
     if (result.rows.length === 0) return res.status(400).json({ error: 'Пользователь не найден' });
-
     const newPass = Math.random().toString(36).slice(-8);
     const hash = await bcrypt.hash(newPass, 10);
     await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [hash, email]);
-
     res.json({ message: `Новый пароль: ${newPass}`, pass: newPass });
     console.log(`[AUTH] Новый пароль для ${email}: ${newPass}`);
-  } catch (err) { 
-    if (res.headersSent) return;
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { if (!res.headersSent) res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/user/profile', authMiddleware, async (req, res) => {
@@ -189,15 +161,28 @@ app.get('/api/user/profile', authMiddleware, async (req, res) => {
   res.json(result.rows[0]);
 });
 
-// --- ОСТАЛЬНОЕ API ---
 app.get('/api/cars', async (req, res) => { const r = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(r.rows); });
 app.get('/api/services', async (req, res) => { const r = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(r.rows); });
 
 const limiter = rateLimit({ windowMs: 60 * 1000, max: 5 });
+
 app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   let { name, phone, car, price } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
+  
   const userId = req.user ? req.user.userId : null;
+  
+  // ИСПРАВЛЕНИЕ 1: Защита от дубликатов заявок
+  if (userId) {
+    const checkDup = await pool.query(
+      `SELECT * FROM bookings WHERE user_id = $1 AND car = $2 AND status != 'Отменена'`, 
+      [userId, car]
+    );
+    if (checkDup.rows.length > 0) {
+      return res.status(400).json({ error: 'У вас уже есть активная заявка на эту машину.' });
+    }
+  }
+
   let finalPrice = parseInt(price) || null;
   let discountText = '';
   
@@ -222,20 +207,21 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   res.json(r.rows);
 });
 
-// ИСПРАВЛЕНИЕ 1: Проверка на дубликат сборки перед сохранением
+// ИСПРАВЛЕНИЕ 3: Отмена заявки клиентом (меняет статус на "Отменена")
+app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  try {
+    await pool.query(`UPDATE bookings SET status = 'Отменена' WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.userId]);
+    res.json({ message: 'Заявка отменена' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.post('/api/user/save-build', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   const { car_name, build_text, total_hp, total_price } = req.body;
-  
   try {
-    const check = await pool.query(
-      `SELECT * FROM saved_builds WHERE user_id = $1 AND car_name = $2 AND build_text = $3 AND total_hp = $4`,
-      [req.user.userId, car_name, build_text, total_hp]
-    );
-    if (check.rows.length > 0) {
-      return res.status(400).json({ error: 'Эта сборка уже есть в гараже' });
-    }
-    
+    const check = await pool.query(`SELECT * FROM saved_builds WHERE user_id = $1 AND car_name = $2 AND build_text = $3 AND total_hp = $4`, [req.user.userId, car_name, build_text, total_hp]);
+    if (check.rows.length > 0) return res.status(400).json({ error: 'Эта сборка уже есть в гараже' });
     await pool.query(`INSERT INTO saved_builds (user_id, car_name, build_text, total_hp, total_price) VALUES ($1, $2, $3, $4, $5)`, [req.user.userId, car_name, build_text, total_hp, total_price]);
     res.status(201).json({ message: 'Сборка сохранена' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -258,8 +244,16 @@ const adminAuth = basicAuth({ users: { [process.env.ADMIN_USER || 'admin']: proc
 app.get('/admin', adminAuth, (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')); });
 app.get('/api/admin/bookings', adminAuth, async (req, res) => { const r = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(r.rows); });
 app.put('/api/admin/bookings/:id/status', adminAuth, async (req, res) => { await pool.query(`UPDATE bookings SET status = $1 WHERE id = $2`, [req.body.status, req.params.id]); res.json({ message: 'OK' }); });
-app.get('/api/admin/clients', adminAuth, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
 
+// ИСПРАВЛЕНИЕ 2: Удаление заявки админом
+app.delete('/api/admin/bookings/:id', adminAuth, async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]);
+    res.json({ message: 'Заявка удалена' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/admin/clients', adminAuth, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
 app.delete('/api/admin/clients/:id', adminAuth, async (req, res) => {
   try {
     const clientId = req.params.id;

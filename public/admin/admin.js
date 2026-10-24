@@ -24,13 +24,17 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${b.phone}</td>
           <td>${b.car} ${b.price ? `<br><small style="color:var(--grey);">${b.price} ₽</small>` : ''}</td>
           <td>
-            <select onchange="updateBookingStatus(${b.id}, this.value)" class="status-select">
+            <select onchange="updateBookingStatus(${b.id}, this.value)" class="status-select status-${b.status.replace(/\s+/g, '_')}">
               <option value="Новая" ${b.status==='Новая'?'selected':''}>Новая</option>
               <option value="В работе" ${b.status==='В работе'?'selected':''}>В работе</option>
               <option value="Выполнена" ${b.status==='Выполнена'?'selected':''}>Выполнена</option>
+              <option value="Отменена" ${b.status==='Отменена'?'selected':''}>Отменена</option>
             </select>
           </td>
           <td>${new Date(b.created_at).toLocaleString('ru-RU')}</td>
+          <td>
+            <span class="action-link delete" onclick="deleteAdminBooking(${b.id})">УДАЛИТЬ</span>
+          </td>
         </tr>
       `).join('');
     } catch (err) { console.error('Ошибка загрузки заявок', err); }
@@ -41,6 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) 
     });
     loadBookings();
+  };
+
+  window.deleteAdminBooking = async (id) => {
+    if (!confirm('Вы уверены, что хотите навсегда удалить эту заявку?')) return;
+    try {
+      await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+      loadBookings();
+    } catch (err) { alert('Ошибка удаления'); }
   };
 
   // --- 2. КЛИЕНТЫ ---
@@ -56,9 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${c.name || '-'}</td>
           <td>${c.phone || '-'}</td>
           <td>${new Date(c.created_at).toLocaleString('ru-RU')}</td>
-          <td>
-            <span class="action-link delete" onclick="deleteClient(${c.id})">Удалить</span>
-          </td>
+          <td><span class="action-link delete" onclick="deleteClient(${c.id})">Удалить</span></td>
         </tr>
       `).join('');
     } catch (err) { console.error('Ошибка загрузки клиентов', err); }
@@ -69,10 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Ошибка удаления');
-      loadClients();
-    } catch (err) {
-      alert('Ошибка при удалении клиента.');
-    }
+      loadClients(); loadBookings();
+    } catch (err) { alert('Ошибка при удалении клиента.'); }
   };
 
   // --- 3. МАШИНЫ ---
@@ -226,15 +234,13 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCars();
   loadServices();
 
-      // Автообновление админки каждые 5 секунд (если не открыта модалка)
+  // Автообновление каждые 5 секунд
   setInterval(() => {
-    if (document.querySelector('.modal.open')) return; // Не обновляем, если открыто окно редактирования
-    
+    if (document.querySelector('.modal.open')) return; 
     const activeTab = document.querySelector('.tab-btn.active').dataset.target;
     if (activeTab === 'bookings') loadBookings();
     if (activeTab === 'cars') loadCars();
     if (activeTab === 'services') loadServices();
     if (activeTab === 'clients') loadClients();
   }, 5000);
-  
 });
