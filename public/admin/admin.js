@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Функция кастомного подтверждения
   function showAdminConfirm(text, callback) {
     const modal = document.getElementById('admin-confirm-modal');
     document.getElementById('admin-confirm-text').textContent = text;
@@ -20,7 +19,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const yesBtn = document.getElementById('admin-confirm-yes');
     const noBtn = document.getElementById('admin-confirm-no');
     
-    // Удаляем старые слушатели, клонируя кнопку
     const newYesBtn = yesBtn.cloneNode(true);
     const newNoBtn = noBtn.cloneNode(true);
     yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
@@ -51,27 +49,21 @@ document.addEventListener('DOMContentLoaded', () => {
             </select>
           </td>
           <td>${new Date(b.created_at).toLocaleString('ru-RU')}</td>
-          <td>
-            <span class="action-link delete" onclick="deleteAdminBooking(${b.id})">УДАЛИТЬ</span>
-          </td>
+          <td><span class="action-link delete" onclick="deleteAdminBooking(${b.id})">УДАЛИТЬ</span></td>
         </tr>
       `).join('');
-    } catch (err) { console.error('Ошибка загрузки заявок', err); }
+    } catch (err) { console.error(err); }
   }
   
   window.updateBookingStatus = async (id, status) => {
-    await fetch(`/api/admin/bookings/${id}/status`, { 
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) 
-    });
+    await fetch(`/api/admin/bookings/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
     loadBookings();
   };
 
   window.deleteAdminBooking = (id) => {
     showAdminConfirm('Вы уверены, что хотите навсегда удалить эту заявку?', async () => {
-      try {
-        await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
-        loadBookings();
-      } catch (err) { alert('Ошибка удаления'); }
+      await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+      loadBookings();
     });
   };
 
@@ -91,16 +83,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <td><span class="action-link delete" onclick="deleteClient(${c.id})">Удалить</span></td>
         </tr>
       `).join('');
-    } catch (err) { console.error('Ошибка загрузки клиентов', err); }
+    } catch (err) { console.error(err); }
   }
 
   window.deleteClient = (id) => {
-    showAdminConfirm('Вы уверены, что хотите удалить клиента? Все его заявки и сборки также будут удалены.', async () => {
-      try {
-        const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Ошибка удаления');
-        loadClients(); loadBookings();
-      } catch (err) { alert('Ошибка при удалении клиента.'); }
+    showAdminConfirm('Удалить клиента? Все его заявки и сборки также будут удалены.', async () => {
+      await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
+      loadClients(); loadBookings();
     });
   };
 
@@ -251,13 +240,40 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
   });
 
+  // --- 5. ОТЗЫВЫ ---
+  async function loadReviews() {
+    const tbody = document.getElementById('reviews-list');
+    try {
+      const res = await fetch('/api/admin/reviews');
+      const data = await res.json();
+      tbody.innerHTML = data.map(r => `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.name}</td>
+          <td style="color:var(--red);">${'★'.repeat(r.rating)}</td>
+          <td>${r.text}</td>
+          <td>${new Date(r.created_at).toLocaleString('ru-RU')}</td>
+          <td><span class="action-link delete" onclick="deleteReview(${r.id})">Удалить</span></td>
+        </tr>
+      `).join('');
+    } catch (err) { console.error(err); }
+  }
+
+  window.deleteReview = (id) => {
+    showAdminConfirm('Удалить этот отзыв?', async () => {
+      await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+      loadReviews();
+    });
+  };
+
   // Инициализация
   loadBookings();
   loadClients();
   loadCars();
   loadServices();
+  loadReviews();
 
-  // Автообновление каждые 5 секунд
+  // Автообновление
   setInterval(() => {
     if (document.querySelector('.modal.open')) return; 
     const activeTab = document.querySelector('.tab-btn.active').dataset.target;
@@ -265,37 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (activeTab === 'cars') loadCars();
     if (activeTab === 'services') loadServices();
     if (activeTab === 'clients') loadClients();
+    if (activeTab === 'reviews') loadReviews();
   }, 5000);
 });
-
-// В функции инициализации (внизу) добавь loadReviews();
-// В setInterval добавь:
-// if (activeTab === 'reviews') loadReviews();
-
-// Сама функция:
-async function loadReviews() {
-  const tbody = document.getElementById('reviews-list');
-  try {
-    const res = await fetch('/api/admin/reviews');
-    const data = await res.json();
-    tbody.innerHTML = data.map(r => `
-      <tr>
-        <td>${r.id}</td>
-        <td>${r.name}</td>
-        <td style="color:var(--red);">${'★'.repeat(r.rating)}</td>
-        <td>${r.text}</td>
-        <td>${new Date(r.created_at).toLocaleString('ru-RU')}</td>
-        <td>
-          <span class="action-link delete" onclick="deleteReview(${r.id})">Удалить</span>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) { console.error(err); }
-}
-
-window.deleteReview = (id) => {
-  showAdminConfirm('Удалить этот отзыв?', async () => {
-    await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
-    loadReviews();
-  });
-};

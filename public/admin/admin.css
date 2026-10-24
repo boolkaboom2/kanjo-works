@@ -6,10 +6,7 @@
 }
 
 * { box-sizing: border-box; }
-body { 
-  margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); 
-  user-select: none; /* Убирает палочку */
-}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); user-select: none; }
 input, textarea, select { user-select: text; cursor: text; }
 a { text-decoration: none; color: inherit; cursor: pointer; }
 
@@ -56,10 +53,7 @@ h2 { font-family: var(--font-display); font-size: 32px; margin: 0 0 20px 0; font
 .modal.open .modal-content { transform: translateY(0); }
 .modal-content h3 { font-family: var(--font-display); font-size: 28px; margin-top: 0; color: var(--red); }
 
-#car-form input, #car-form textarea, #service-form input, #service-form textarea { 
-  width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); 
-  color: var(--text); font-family: var(--font-body); margin-bottom: 15px; outline: none; 
-}
+#car-form input, #car-form textarea, #service-form input, #service-form textarea { width: 100%; padding: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--font-body); margin-bottom: 15px; outline: none; }
 #car-form input:focus, #service-form input:focus { border-color: var(--red); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 15px; margin-top: 20px; }
