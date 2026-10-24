@@ -132,7 +132,55 @@
         });
       });
     } catch (err) { console.error(err); }
+    
   }
+    /* ---------- 3.5 КАСТОМНЫЙ ПЛАВНЫЙ СКРОЛЛ ---------- */
+  const container = document.getElementById('scroll-container');
+  const logoBtn = document.getElementById('logo-btn');
+  
+  if (container && window.innerWidth > 1024) {
+    let targetScroll = container.scrollLeft;
+    let currentScroll = container.scrollLeft;
+    let isAnimating = false;
+
+    if (logoBtn) {
+      logoBtn.addEventListener('click', () => {
+        targetScroll = 0;
+        if (!isAnimating) { isAnimating = true; requestAnimationFrame(updateScroll); }
+      });
+    }
+
+    container.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      targetScroll += e.deltaY * 1.5;
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+      if (!isAnimating) { isAnimating = true; requestAnimationFrame(updateScroll); }
+    }, { passive: false });
+
+    function updateScroll() {
+      currentScroll += (targetScroll - currentScroll) * 0.08;
+      container.scrollLeft = currentScroll;
+      if (Math.abs(targetScroll - currentScroll) > 0.5) {
+        requestAnimationFrame(updateScroll);
+      } else {
+        container.scrollLeft = targetScroll;
+        currentScroll = targetScroll;
+        isAnimating = false;
+      }
+    }
+    window.addEventListener('resize', () => {
+      targetScroll = container.scrollLeft;
+      currentScroll = container.scrollLeft;
+    });
+  } else {
+    if (logoBtn) {
+      logoBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  }
+
 
   /* ---------- 4. МОДАЛКИ ---------- */
   const bookingModal = document.getElementById('booking-modal');
