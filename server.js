@@ -99,7 +99,7 @@ app.post('/api/auth/register', async (req, res) => {
   const { email, password, name, phone } = req.body;
   try {
     const check = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    if (check.rows.length > 0) return res.status(400).json({ error: 'Email уже занят' });
+    if (check.rows.length > 0) return res.status(400).json({ error: 'Этот email уже занят. Попробуйте войти или восстановить пароль.' });
 
     const hash = await bcrypt.hash(password, 10);
     const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-значный код
@@ -109,16 +109,24 @@ app.post('/api/auth/register', async (req, res) => {
       [email, hash, name, phone, code]
     );
 
-    // Отправка кода на почту
-    await transporter.sendMail({
+    // СНАЧАЛА отвечаем фронтенду, чтобы кнопка не зависала
+    res.status(201).json({ message: 'Код отправлен на почту', email });
+    
+    // Выводим код в консоль Render (на случай если почта не дойдет)
+    console.log(`[AUTH] Код подтверждения для ${email}: ${code}`);
+
+    // Отправляем почту в фоне (без await)
+    transporter.sendMail({
       from: '"KANJO WORKS" <no-reply@kanjoworks.jp>',
       to: email,
       subject: 'Код подтверждения регистрации',
       text: `Ваш код для завершения регистрации: ${code}`
-    });
+    }).catch(err => console.error('[EMAIL ERROR]', err));
 
-    res.status(201).json({ message: 'Код отправлен на почту', email });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { 
+    if (res.headersSent) return;
+    res.status(500).json({ error: err.message }); 
+  }
 });
 
 app.post('/api/auth/verify', async (req, res) => {
