@@ -39,15 +39,12 @@
         <div class="config-controls">
           <div class="config-group">
             <label>ВЫБЕРИ БАЗУ</label>
-            <!-- КАСТОМНЫЙ СЕЛЕКТ -->
             <div class="custom-select" id="base-car-select">
               <div class="select-trigger">
                 <span id="selected-car-text">ЗАГРУЗКА...</span>
                 <span class="select-arrow">▼</span>
               </div>
-              <div class="select-options" id="base-car-options">
-                <!-- Сюда JS вставит список -->
-              </div>
+              <div class="select-options" id="base-car-options"></div>
             </div>
           </div>
           <div class="config-group"><label>УСТАНОВИТЬ ДЕТАЛИ</label>
@@ -67,6 +64,7 @@
       </div>
     </section>
 
+    <!-- ИСПРАВЛЕННАЯ СЕКЦИЯ КОНТАКТОВ -->
     <section class="panel contact">
       <div class="contact-bg-text">KANJO</div>
       <div class="contact-layout">
@@ -74,13 +72,20 @@
           <h2>READY <br>TO RACE?</h2>
           <p>Запишись на консультацию в наш бокс. Мы находимся в промзоне Токио, найти нас легко по звуку выхлопа.</p>
           <div class="info-row">
-            <div class="info-block"><h3>LOCATION</h3><p>Tokyo, Shibuya City<br>2-Chome, 14-5</p></div>
-            <div class="info-block"><h3>CONTACT</h3><p>+81 90 1234 5678<br>race@kanjoworks.jp</p></div>
+            <div class="info-block">
+              <h3>LOCATION</h3>
+              <p>Tokyo, Shibuya City<br>2-Chome, 14-5</p>
+            </div>
+            <div class="info-block">
+              <h3>CONTACT</h3>
+              <p>+81 90 1234 5678<br>race@kanjoworks.jp</p>
+            </div>
           </div>
-                   <div class="socials">
+          <div class="socials">
             <a href="https://www.youtube.com/channel/UCU5Z3n9Ei8TIJpGfdLDIqFQ" target="_blank" rel="noopener">YOUTUBE</a>
             <a href="https://t.me/Bool2Dr" target="_blank" rel="noopener">TELEGRAM</a>
             <a href="https://discord.gg/mJKUpuTP9y" target="_blank" rel="noopener">DISCORD</a>
+          </div>
         </div>
         <div class="contact-form-wrap">
           <h3>BOOK A SLOT</h3>
@@ -184,6 +189,17 @@
       </div>
       <div id="profile-tab-bookings"><div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
       <div id="profile-tab-builds" style="display: none;"><div id="profile-builds-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
+    </div>
+  </div>
+
+  <!-- КАСТОМНАЯ МОДАЛКА ПОДТВЕРЖДЕНИЯ -->
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h2 id="confirm-text" style="font-size: 24px; margin-bottom: 20px; color: var(--text);">Вы уверены?</h2>
+      <div style="display: flex; gap: 10px; justify-content: center;">
+        <button class="btn-racing" id="confirm-yes" style="flex: 1; font-size: 18px;">ДА</button>
+        <button class="btn-racing" id="confirm-no" style="flex: 1; font-size: 18px; background: transparent; color: var(--text); border-color: var(--text);">НЕТ</button>
+      </div>
     </div>
   </div>
 

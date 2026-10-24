@@ -66,7 +66,7 @@
     input.addEventListener('blur', (e) => { if (e.target.value === '+7 (') e.target.value = ''; });
   });
 
-  /* ---------- 3. ЗВУКИ (ДЕФОЛТНЫЙ КЛИК) ---------- */
+  /* ---------- 3. ЗВУКИ ---------- */
   const AudioContext = window.AudioContext || window.webkitAudioContext; let audioCtx, isSoundOn = true;
   function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
   
@@ -94,23 +94,22 @@
       gain.gain.setValueAtTime(0.15, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
       osc.start(); osc.stop(audioCtx.currentTime + 0.25);
     }
-    // ИСПРАВЛЕНИЕ: Дефолтный приятный звук (как клик в macOS)
     else if (type === 'car') {
       const now = audioCtx.currentTime;
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, now);
-      osc.frequency.exponentialRampToValueAtTime(400, now + 0.08); // Короткий "бульк" вниз
+      osc.type = 'triangle'; 
+      osc.frequency.setValueAtTime(600, now); 
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.15); 
       
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      gain.gain.setValueAtTime(0.3, now); 
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
       
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start(now);
-      osc.stop(now + 0.1);
+      osc.stop(now + 0.15);
     }
   }
 
@@ -120,12 +119,9 @@
   if (soundBtn) soundBtn.addEventListener('click', () => { isSoundOn = !isSoundOn; soundBtn.classList.toggle('muted', !isSoundOn); });
   setInterval(() => { const c = document.getElementById('clock'); if (c) c.textContent = `JST ${new Date().toLocaleTimeString('ru-RU', { hour12: false })}`; }, 1000);
 
-  /* ---------- 4. ЗАГРУЗКА ДАННЫХ И КАСТОМНЫЙ СЕЛЕКТ ---------- */
+  /* ---------- 4. ЗАГРУЗКА ДАННЫХ И СЕЛЕКТ ---------- */
   let carsData = [], servicesData = [];
-  
-  let selectedCarId = null;
-  let selectedCarHp = 0;
-  let selectedCarPrice = 0;
+  let selectedCarId = null, selectedCarHp = 0, selectedCarPrice = 0;
   const customSelect = document.getElementById('base-car-select');
   const selectTrigger = document.querySelector('.select-trigger');
   const optionsContainer = document.getElementById('base-car-options');
@@ -156,9 +152,7 @@
       document.querySelectorAll('.select-option').forEach(opt => {
         opt.addEventListener('click', () => {
           selectedText.textContent = opt.textContent;
-          selectedCarId = opt.dataset.id;
-          selectedCarHp = parseInt(opt.dataset.hp);
-          selectedCarPrice = parseInt(opt.dataset.price);
+          selectedCarId = opt.dataset.id; selectedCarHp = parseInt(opt.dataset.hp); selectedCarPrice = parseInt(opt.dataset.price);
           customSelect.classList.remove('open');
           calculateConfig();
         });
@@ -167,9 +161,7 @@
       const firstOpt = document.querySelector('.select-option');
       if (firstOpt) {
         selectedText.textContent = firstOpt.textContent;
-        selectedCarId = firstOpt.dataset.id;
-        selectedCarHp = parseInt(firstOpt.dataset.hp);
-        selectedCarPrice = parseInt(firstOpt.dataset.price);
+        selectedCarId = firstOpt.dataset.id; selectedCarHp = parseInt(firstOpt.dataset.hp); selectedCarPrice = parseInt(firstOpt.dataset.price);
         calculateConfig();
       }
     }
@@ -180,12 +172,7 @@
       e.stopPropagation();
       customSelect.classList.toggle('open');
     });
-    
-    document.addEventListener('click', (e) => {
-      if (!customSelect.contains(e.target)) {
-        customSelect.classList.remove('open');
-      }
-    });
+    document.addEventListener('click', (e) => { if (!customSelect.contains(e.target)) customSelect.classList.remove('open'); });
   }
 
   async function loadServices() {
@@ -203,25 +190,43 @@
   }
   loadCars(); loadServices();
 
-  /* ---------- 5. МОДАЛКИ И КОНФИГУРАТОР ---------- */
+  /* ---------- 5. МОДАЛКИ ---------- */
   const closeAllModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
   document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', closeAllModals));
   document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeAllModals(); }));
-  
   document.querySelectorAll('.open-booking').forEach(b => b.addEventListener('click', () => { closeAllModals(); document.getElementById('booking-modal').classList.add('open'); playSound('modal'); }));
 
+  // Кастомный confirm
+  const confirmModal = document.getElementById('confirm-modal');
+  const confirmText = document.getElementById('confirm-text');
+  let confirmCallback = null;
+
+  function showConfirm(text, callback) {
+    confirmText.textContent = text;
+    confirmCallback = callback;
+    confirmModal.classList.add('open');
+  }
+
+  document.getElementById('confirm-yes').addEventListener('click', () => {
+    if (confirmCallback) confirmCallback();
+    confirmModal.classList.remove('open');
+  });
+
+  document.getElementById('confirm-no').addEventListener('click', () => {
+    confirmModal.classList.remove('open');
+  });
+
+  /* ---------- 6. КОНФИГУРАТОР ---------- */
   const partsCbs = document.querySelectorAll('.part-row input[type="checkbox"]');
-  
   function calculateConfig() {
     let hp = selectedCarHp || 0, price = selectedCarPrice || 0;
     partsCbs.forEach(cb => { if (cb.checked) { hp += parseInt(cb.dataset.hp) || 0; price += parseInt(cb.dataset.price) || 0; } });
     document.getElementById('total-hp').textContent = hp;
     document.getElementById('total-price').textContent = price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
   }
-  
   partsCbs.forEach(c => c.addEventListener('change', calculateConfig));
 
-  /* ---------- 6. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---------- */
+  /* ---------- 7. АВТОРИЗАЦИЯ И ПРОФИЛЬ ---------- */
   let authToken = localStorage.getItem('kanjo_token') || null;
   let currentUser = null;
   let tempEmail = ''; 
@@ -352,7 +357,7 @@
     } catch (err) { showToast('Ошибка сервера', 'error'); }
   });
 
-   async function loadProfile() {
+  async function loadProfile() {
     if (!authToken) return;
     try {
       const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
@@ -405,13 +410,15 @@
     `).join('') : '<p>Гараж пуст. Соберите свою легенду!</p>';
   }
 
+  // Замена стандартного confirm на кастомный
   window.deleteBuild = async (id) => {
-    if(!confirm('Удалить сборку?')) return;
-    await fetch(`/api/user/builds/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
-    loadBuilds(); showToast('Сборка удалена', 'success');
+    showConfirm('Удалить сборку?', async () => {
+      await fetch(`/api/user/builds/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
+      loadBuilds(); showToast('Сборка удалена', 'success');
+    });
   };
 
-  /* ---------- 7. ОТПРАВКА ЗАЯВОК ---------- */
+  /* ---------- 8. ОТПРАВКА ЗАЯВОК ---------- */
   const handleForm = async (e) => {
     e.preventDefault(); if (!validateForm(e.target)) return;
     const btn = e.target.querySelector('button'); const originalText = btn.textContent;
@@ -443,7 +450,7 @@
     modal.querySelectorAll('input[type="text"]')[1].value = text;
     modal.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
     
-        if (currentUser) {
+    if (currentUser) {
       modal.querySelector('input[type="text"]').value = currentUser.name || '';
       modal.querySelector('input[type="tel"]').value = currentUser.phone || '';
       modal.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
@@ -463,7 +470,7 @@
     if (currentUser) {
       form.querySelector('input[type="text"]').value = currentUser.name || '';
       form.querySelector('input[type="tel"]').value = currentUser.phone || '';
-      form.querySelector('.discount-hint').style.display = 'block';
+      form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
 
@@ -483,7 +490,7 @@
     } catch (err) { showToast('Ошибка сервера', 'error'); }
   });
 
-  /* ---------- 8. КАСТОМНЫЙ ВИДЕОПЛЕЕР ---------- */
+  /* ---------- 9. ВИДЕОПЛЕЕР ---------- */
   const videoModal = document.getElementById('video-modal');
   const video = document.getElementById('credits-video');
   const playPauseBtn = document.getElementById('play-pause-btn');
@@ -499,11 +506,7 @@
     playPauseBtn.textContent = '⏸';
   });
 
-  function closeVideo() {
-    videoModal.classList.remove('open');
-    video.pause();
-  }
-
+  function closeVideo() { videoModal.classList.remove('open'); video.pause(); }
   document.getElementById('close-video-btn').addEventListener('click', closeVideo);
   videoModal.addEventListener('click', (e) => { if (e.target === videoModal) closeVideo(); });
 
@@ -517,27 +520,11 @@
     muteBtn.textContent = video.muted ? '🔇' : '🔊';
   });
 
-  function formatTime(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  }
+  function formatTime(seconds) { const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m}:${s < 10 ? '0' : ''}${s}`; }
+  video.addEventListener('timeupdate', () => { const percent = (video.currentTime / video.duration) * 100; progressBar.style.width = `${percent}%`; timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`; });
+  progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
 
-  video.addEventListener('timeupdate', () => {
-    const percent = (video.currentTime / video.duration) * 100;
-    progressBar.style.width = `${percent}%`;
-    timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`;
-  });
-
-  progressContainer.addEventListener('click', (e) => {
-    const rect = progressContainer.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
-    video.currentTime = pos * video.duration;
-  });
-
-})();
-
-  // Автообновление ЛК при возврате на вкладку
+  /* ---------- 10. АВТООБНОВЛЕНИЕ ЛК ---------- */
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && authToken) {
       loadProfile();
@@ -547,3 +534,5 @@
       }
     }
   });
+
+})();
