@@ -155,7 +155,6 @@
   }
   loadCars(); loadServices();
 
-  // ОТЗЫВЫ НА ГЛАВНОЙ
   async function loadMainReviews() {
     const grid = document.getElementById('main-reviews-grid'); if (!grid) return;
     try {
@@ -325,7 +324,6 @@
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); loadUserReviews(); });
 
-  // Вкладки ЛК
   const tabsList = document.querySelectorAll('.auth-tabs .auth-tab');
   tabsList.forEach(tab => {
     tab.addEventListener('click', (e) => {
@@ -363,9 +361,16 @@
   }
 
   window.cancelUserBooking = async (id) => {
-    showConfirm('Отменить эту заявку?', async () => {
+    const reason = prompt('Укажите причину отмены (например: передумал, нашел дешевле, ошибся в заказе):');
+    if (reason === null) return;
+    
+    showConfirm('Вы уверены, что хотите отменить заявку?', async () => {
       try {
-        const res = await fetch(`/api/user/bookings/${id}/cancel`, { method: 'PUT', headers: { 'Authorization': `Bearer ${authToken}` } });
+        const res = await fetch(`/api/user/bookings/${id}/cancel`, { 
+          method: 'PUT', 
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ reason: reason || 'Не указана' })
+        });
         if (res.ok) { loadBookings(); showToast('Заявка отменена', 'success'); loadProfile(); }
       } catch (err) { showToast('Ошибка', 'error'); }
     });
@@ -390,7 +395,6 @@
     });
   };
 
-  // ОТЗЫВЫ В ЛК С КАСТОМНЫМИ ЗВЕЗДАМИ
   const stars = document.querySelectorAll('.star');
   let currentRating = 5;
   const ratingText = document.getElementById('selected-rating-text');
@@ -411,11 +415,28 @@
   stars.forEach(s => { if (parseInt(s.dataset.val) <= currentRating) s.style.color = 'var(--red)'; });
 
   async function loadUserReviews() {
-    const list = document.getElementById('profile-reviews-list'); if (!list) return;
-    list.innerHTML = 'Загрузка...';
-    const res = await fetch('/api/reviews'); const allReviews = await res.json();
-    const userReviews = allReviews.filter(r => r.name === currentUser?.name);
+    const list = document.getElementById('profile-reviews-list'); 
+    const formContainer = document.getElementById('profile-tab-reviews').querySelector('div');
     
+    list.innerHTML = 'Загрузка...';
+    
+    const bookingsRes = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
+    const bookings = await bookingsRes.json();
+    
+    const reviewsRes = await fetch('/api/reviews');
+    const allReviews = await reviewsRes.json();
+    const userReviews = allReviews.filter(r => r.name === currentUser?.name);
+
+    const completedBookings = bookings.filter(b => b.status === 'Выполнена');
+    const unreviewedBooking = completedBookings.find(b => !userReviews.some(r => r.booking_id === b.id));
+
+    if (unreviewedBooking) {
+      formContainer.style.display = 'block';
+      formContainer.dataset.bookingId = unreviewedBooking.id; 
+    } else {
+      formContainer.style.display = 'none'; 
+    }
+
     list.innerHTML = userReviews.length ? userReviews.map(r => `
       <div class="profile-card">
         <div class="profile-card-info">
@@ -428,18 +449,25 @@
 
   document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
     const text = document.getElementById('review-text').value;
+    const formContainer = document.getElementById('profile-tab-reviews').querySelector('div');
+    const bookingId = formContainer.dataset.bookingId;
+
     if (!text) return showToast('Напишите текст отзыва', 'error');
+    if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');
     
     try {
       const res = await fetch('/api/user/reviews', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ text, rating: currentRating })
+        body: JSON.stringify({ text, rating: currentRating, booking_id: parseInt(bookingId) })
       });
+      const data = await res.json();
       if (res.ok) {
         showToast('Спасибо за отзыв!', 'success');
         document.getElementById('review-text').value = '';
         loadUserReviews();
         loadMainReviews();
+      } else {
+        showToast(data.error, 'error');
       }
     } catch (err) { showToast('Ошибка отправки', 'error'); }
   });
@@ -512,7 +540,7 @@
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
     
-    form.querySelectorAll('input[type="text"]')[1].value = srvName;
+    form.querySelectorAll('input[type="text"]')[1].value = srvName; 
     
     if (currentUser) {
       form.querySelector('input[type="text"]').value = currentUser.name || '';

@@ -43,6 +43,7 @@ async function initDB() {
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новая'`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS price INTEGER`);
+    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason TEXT`); // НОВОЕ ПОЛЕ
 
     await pool.query(`CREATE TABLE IF NOT EXISTS saved_builds (
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), car_name VARCHAR(255), build_text TEXT, total_hp INTEGER, total_price INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -56,10 +57,10 @@ async function initDB() {
       id SERIAL PRIMARY KEY, num VARCHAR(10), title VARCHAR(255), short TEXT, full_description TEXT, works TEXT, price VARCHAR(50)
     )`);
 
-    // НОВАЯ ТАБЛИЦА ОТЗЫВОВ
     await pool.query(`CREATE TABLE IF NOT EXISTS reviews (
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+    await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`); // НОВОЕ ПОЛЕ
 
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
@@ -174,7 +175,6 @@ app.get('/api/user/profile', authMiddleware, async (req, res) => {
 app.get('/api/cars', async (req, res) => { const r = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(r.rows); });
 app.get('/api/services', async (req, res) => { const r = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(r.rows); });
 
-// --- ОТЗЫВЫ ---
 app.get('/api/reviews', async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
@@ -184,13 +184,22 @@ app.get('/api/reviews', async (req, res) => {
 
 app.post('/api/user/reviews', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
-  const { text, rating } = req.body;
-  if (!text || !rating) return res.status(400).json({ error: 'Заполните все поля' });
+  const { text, rating, booking_id } = req.body;
+  if (!text || !rating || !booking_id) return res.status(400).json({ error: 'Заполните все поля' });
+  
   try {
+    // 1. Проверяем, что заказ принадлежит юзеру и выполнен
+    const checkBooking = await pool.query(`SELECT * FROM bookings WHERE id = $1 AND user_id = $2 AND status = 'Выполнена'`, [booking_id, req.user.userId]);
+    if (checkBooking.rows.length === 0) return res.status(400).json({ error: 'Можно оставлять отзыв только на выполненные заказы' });
+    
+    // 2. Проверяем, нет ли уже отзыва на этот заказ
+    const checkReview = await pool.query(`SELECT * FROM reviews WHERE booking_id = $1`, [booking_id]);
+    if (checkReview.rows.length > 0) return res.status(400).json({ error: 'Вы уже оставили отзыв на этот заказ' });
+
     const user = await pool.query('SELECT name FROM users WHERE id = $1', [req.user.userId]);
     await pool.query(
-      `INSERT INTO reviews (user_id, name, text, rating) VALUES ($1, $2, $3, $4)`,
-      [req.user.userId, user.rows[0].name || 'Клиент', text, parseInt(rating)]
+      `INSERT INTO reviews (user_id, booking_id, name, text, rating) VALUES ($1, $2, $3, $4, $5)`,
+      [req.user.userId, booking_id, user.rows[0].name || 'Клиент', text, parseInt(rating)]
     );
     res.status(201).json({ message: 'Отзыв добавлен' });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -239,8 +248,9 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
 
 app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  const { reason } = req.body;
   try {
-    await pool.query(`UPDATE bookings SET status = 'Отменена' WHERE id = $1 AND user_id = $2`, [req.params.id, req.user.userId]);
+    await pool.query(`UPDATE bookings SET status = 'Отменена', cancel_reason = $1 WHERE id = $2 AND user_id = $3`, [reason || 'Не указана', req.params.id, req.user.userId]);
     res.json({ message: 'Заявка отменена' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -286,24 +296,20 @@ app.delete('/api/admin/clients/:id', adminAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/admin/cars', adminAuth, async (req, res) => { const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body; await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [title, spec, img, engine, hp, weight, drive, accel, description]); res.status(201).json({ message: 'OK' }); });
-app.put('/api/admin/cars/:id', adminAuth, async (req, res) => { const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body; await pool.query(`UPDATE cars SET title=$1, spec=$2, img=$3, engine=$4, hp=$5, weight=$6, drive=$7, accel=$8, description=$9 WHERE id=$10`, [title, spec, img, engine, hp, weight, drive, accel, description, req.params.id]); res.json({ message: 'OK' }); });
-app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });
-app.post('/api/admin/services', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1,$2,$3,$4,$5,$6)`, [num, title, short, full_description, works, price]); res.status(201).json({ message: 'OK' }); });
-app.put('/api/admin/services/:id', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`UPDATE services SET num=$1, title=$2, short=$3, full_description=$4, works=$5, price=$6 WHERE id=$7`, [num, title, short, full_description, works, price, req.params.id]); res.json({ message: 'OK' }); });
-app.delete('/api/admin/services/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM services WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });
-
-app.get('/api/admin/reviews', adminAuth, async (req, res) => {
-  const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC');
-  res.json(r.rows);
-});
-
+app.get('/api/admin/reviews', adminAuth, async (req, res) => { const r = await pool.query('SELECT * FROM reviews ORDER BY created_at DESC'); res.json(r.rows); });
 app.delete('/api/admin/reviews/:id', adminAuth, async (req, res) => {
   try {
     await pool.query(`DELETE FROM reviews WHERE id = $1`, [req.params.id]);
     res.json({ message: 'Отзыв удален' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+app.post('/api/admin/cars', adminAuth, async (req, res) => { const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body; await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [title, spec, img, engine, hp, weight, drive, accel, description]); res.status(201).json({ message: 'OK' }); });
+app.put('/api/admin/cars/:id', adminAuth, async (req, res) => { const { title, spec, img, engine, hp, weight, drive, accel, description } = req.body; await pool.query(`UPDATE cars SET title=$1, spec=$2, img=$3, engine=$4, hp=$5, weight=$6, drive=$7, accel=$8, description=$9 WHERE id=$10`, [title, spec, img, engine, hp, weight, drive, accel, description, req.params.id]); res.json({ message: 'OK' }); });
+app.delete('/api/admin/cars/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM cars WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });
+app.post('/api/admin/services', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ($1,$2,$3,$4,$5,$6)`, [num, title, short, full_description, works, price]); res.status(201).json({ message: 'OK' }); });
+app.put('/api/admin/services/:id', adminAuth, async (req, res) => { const { num, title, short, full_description, works, price } = req.body; await pool.query(`UPDATE services SET num=$1, title=$2, short=$3, full_description=$4, works=$5, price=$6 WHERE id=$7`, [num, title, short, full_description, works, price, req.params.id]); res.json({ message: 'OK' }); });
+app.delete('/api/admin/services/:id', adminAuth, async (req, res) => { await pool.query(`DELETE FROM services WHERE id = $1`, [req.params.id]); res.json({ message: 'OK' }); });
 
 app.post('/api/telegram-webhook', async (req, res) => {
   const { callback_query } = req.body;

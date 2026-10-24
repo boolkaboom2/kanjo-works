@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <option value="Отменена" ${b.status==='Отменена'?'selected':''}>Отменена</option>
             </select>
           </td>
+          <td>${b.status === 'Отменена' && b.cancel_reason ? b.cancel_reason : '-'}</td>
           <td>${new Date(b.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteAdminBooking(${b.id})">УДАЛИТЬ</span></td>
         </tr>
