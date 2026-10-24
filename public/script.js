@@ -424,6 +424,23 @@
     }
   });
 
+  // ИСПРАВЛЕНИЕ 4: Кнопка "Заказать" в модалке услуги
+  document.getElementById('btn-order-service').addEventListener('click', () => {
+    const srvName = document.getElementById('srv-title').textContent;
+    closeAllModals();
+    const bookingModal = document.getElementById('booking-modal');
+    bookingModal.classList.add('open'); playSound('modal');
+    const form = document.getElementById('booking-form');
+    
+    form.querySelectorAll('input[type="text"]')[1].value = srvName; // Вписываем название услуги
+    
+    if (currentUser) {
+      form.querySelector('input[type="text"]').value = currentUser.name || '';
+      form.querySelector('input[type="tel"]').value = currentUser.phone || '';
+      form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
+    }
+  });
+
   document.getElementById('btn-save-build').addEventListener('click', async () => {
     if (!authToken) { authModal.classList.add('open'); return; }
     const car = selectedText.textContent;

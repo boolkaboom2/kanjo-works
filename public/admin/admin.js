@@ -11,6 +11,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Функция кастомного подтверждения
+  function showAdminConfirm(text, callback) {
+    const modal = document.getElementById('admin-confirm-modal');
+    document.getElementById('admin-confirm-text').textContent = text;
+    modal.classList.add('open');
+    
+    const yesBtn = document.getElementById('admin-confirm-yes');
+    const noBtn = document.getElementById('admin-confirm-no');
+    
+    // Удаляем старые слушатели, клонируя кнопку
+    const newYesBtn = yesBtn.cloneNode(true);
+    const newNoBtn = noBtn.cloneNode(true);
+    yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
+    noBtn.parentNode.replaceChild(newNoBtn, noBtn);
+    
+    newYesBtn.addEventListener('click', () => { callback(); modal.classList.remove('open'); });
+    newNoBtn.addEventListener('click', () => modal.classList.remove('open'));
+  }
+
   // --- 1. ЗАЯВКИ ---
   async function loadBookings() {
     const tbody = document.getElementById('bookings-list');
@@ -47,12 +66,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadBookings();
   };
 
-  window.deleteAdminBooking = async (id) => {
-    if (!confirm('Вы уверены, что хотите навсегда удалить эту заявку?')) return;
-    try {
-      await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
-      loadBookings();
-    } catch (err) { alert('Ошибка удаления'); }
+  window.deleteAdminBooking = (id) => {
+    showAdminConfirm('Вы уверены, что хотите навсегда удалить эту заявку?', async () => {
+      try {
+        await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+        loadBookings();
+      } catch (err) { alert('Ошибка удаления'); }
+    });
   };
 
   // --- 2. КЛИЕНТЫ ---
@@ -74,13 +94,14 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) { console.error('Ошибка загрузки клиентов', err); }
   }
 
-  window.deleteClient = async (id) => {
-    if (!confirm('Вы уверены, что хотите удалить клиента? Все его заявки и сборки также будут удалены.')) return;
-    try {
-      const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Ошибка удаления');
-      loadClients(); loadBookings();
-    } catch (err) { alert('Ошибка при удалении клиента.'); }
+  window.deleteClient = (id) => {
+    showAdminConfirm('Вы уверены, что хотите удалить клиента? Все его заявки и сборки также будут удалены.', async () => {
+      try {
+        const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Ошибка удаления');
+        loadClients(); loadBookings();
+      } catch (err) { alert('Ошибка при удалении клиента.'); }
+    });
   };
 
   // --- 3. МАШИНЫ ---
@@ -133,10 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
     carModal.classList.add('open');
   };
 
-  window.deleteCar = async (id) => {
-    if (!confirm('Вы уверены, что хотите удалить эту машину?')) return;
-    await fetch(`/api/admin/cars/${id}`, { method: 'DELETE' });
-    loadCars();
+  window.deleteCar = (id) => {
+    showAdminConfirm('Вы уверены, что хотите удалить эту машину?', async () => {
+      await fetch(`/api/admin/cars/${id}`, { method: 'DELETE' });
+      loadCars();
+    });
   };
 
   carForm.addEventListener('submit', async (e) => {
@@ -204,10 +226,11 @@ document.addEventListener('DOMContentLoaded', () => {
     srvModal.classList.add('open');
   };
 
-  window.deleteService = async (id) => {
-    if (!confirm('Вы уверены, что хотите удалить эту услугу?')) return;
-    await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
-    loadServices();
+  window.deleteService = (id) => {
+    showAdminConfirm('Вы уверены, что хотите удалить эту услугу?', async () => {
+      await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
+      loadServices();
+    });
   };
 
   srvForm.addEventListener('submit', async (e) => {

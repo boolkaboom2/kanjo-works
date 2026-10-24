@@ -91,7 +91,7 @@
           <form id="inline-booking-form" novalidate>
             <div class="input-group"><input type="text" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
             <div class="input-group"><input type="tel" class="phone-input" placeholder="+7 (___) ___-__-__" required><span class="error-msg"></span></div>
-            <div class="input-group"><input type="text" placeholder="CAR MODEL (e.g. NISSAN S15)" required><span class="error-msg"></span></div>
+            <div class="input-group"><input type="text" placeholder="CAR / SERVICE" required><span class="error-msg"></span></div>
             <input type="hidden" class="booking-price-input">
             <div class="discount-hint" style="display: none; color: #10b981; font-size: 12px; margin-bottom: 10px;">Скидка 5% применена!</div>
             <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
@@ -110,7 +110,7 @@
       <form id="booking-form" novalidate>
         <div class="input-group"><input type="text" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
         <div class="input-group"><input type="tel" class="phone-input" placeholder="+7 (___) ___-__-__" required><span class="error-msg"></span></div>
-        <div class="input-group"><input type="text" placeholder="CAR MODEL" required><span class="error-msg"></span></div>
+        <div class="input-group"><input type="text" placeholder="CAR / SERVICE" required><span class="error-msg"></span></div>
         <input type="hidden" class="booking-price-input">
         <div class="discount-hint" style="display: none; color: #10b981; font-size: 12px; margin-bottom: 10px;">Скидка 5% применена!</div>
         <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
@@ -121,7 +121,10 @@
   <div id="service-modal" class="modal">
     <div class="modal-content wide"><button class="close-modal">✕</button><h2 id="srv-title">SERVICE</h2>
       <div class="srv-details"><p id="srv-desc" class="srv-desc">Описание...</p><ul id="srv-list" class="srv-list"></ul>
-        <div class="srv-footer"><div class="srv-price">Цена: <span id="srv-price">от 100 000 ₽</span></div><button class="btn-racing open-booking">ЗАКАЗАТЬ</button></div>
+        <div class="srv-footer">
+          <div class="srv-price">Цена: <span id="srv-price">от 100 000 ₽</span></div>
+          <button class="btn-racing" id="btn-order-service">ЗАКАЗАТЬ</button>
+        </div>
       </div>
     </div>
   </div>
