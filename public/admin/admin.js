@@ -1,5 +1,84 @@
 document.addEventListener('DOMContentLoaded', () => {
-  
+  const token = localStorage.getItem('kanjo_admin_token');
+  const loginModal = document.getElementById('login-modal');
+  const adminTabs = document.getElementById('admin-tabs');
+  const adminMain = document.getElementById('admin-main');
+  const btnLogout = document.getElementById('btn-logout');
+
+  // Перехватываем fetch, чтобы всегда добавлять токен
+  const originalFetch = window.fetch;
+  window.fetch = async (...args) => {
+    let [resource, config] = args;
+    if (!config) config = {};
+    if (!config.headers) config.headers = {};
+    
+    const currentToken = localStorage.getItem('kanjo_admin_token');
+    if (currentToken && resource.startsWith('/api/admin')) {
+      config.headers['Authorization'] = `Bearer ${currentToken}`;
+    }
+    
+    const response = await originalFetch(resource, config);
+    if (response.status === 401 && resource.startsWith('/api/admin')) {
+      // Если токен протух или неверный — выкидываем на логин
+      localStorage.removeItem('kanjo_admin_token');
+      loginModal.style.display = 'flex';
+      adminTabs.style.display = 'none';
+      adminMain.style.display = 'none';
+      btnLogout.style.display = 'none';
+    }
+    return response;
+  };
+
+  function initAdminUI() {
+    if (localStorage.getItem('kanjo_admin_token')) {
+      loginModal.style.display = 'none';
+      adminTabs.style.display = 'flex';
+      adminMain.style.display = 'block';
+      btnLogout.style.display = 'block';
+      loadData();
+    } else {
+      loginModal.style.display = 'flex';
+      adminTabs.style.display = 'none';
+      adminMain.style.display = 'none';
+      btnLogout.style.display = 'none';
+    }
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const login = document.getElementById('admin-login').value;
+    const password = document.getElementById('admin-pass').value;
+    const errorEl = document.getElementById('login-error');
+    
+    try {
+      const res = await originalFetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login, password })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        localStorage.setItem('kanjo_admin_token', data.token);
+        errorEl.style.display = 'none';
+        document.getElementById('login-form').reset();
+        initAdminUI();
+      } else {
+        errorEl.textContent = data.error;
+        errorEl.style.display = 'block';
+      }
+    } catch (err) {
+      errorEl.textContent = 'Ошибка сервера';
+      errorEl.style.display = 'block';
+    }
+  });
+
+  btnLogout.addEventListener('click', () => {
+    localStorage.removeItem('kanjo_admin_token');
+    initAdminUI();
+  });
+
+  // --- ЛОГИКА ВКЛАДОК ---
   const tabs = document.querySelectorAll('.tab-btn');
   const contents = document.querySelectorAll('.tab-content');
   tabs.forEach(tab => {
@@ -18,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const yesBtn = document.getElementById('admin-confirm-yes');
     const noBtn = document.getElementById('admin-confirm-no');
-    
     const newYesBtn = yesBtn.cloneNode(true);
     const newNoBtn = noBtn.cloneNode(true);
     yesBtn.parentNode.replaceChild(newYesBtn, yesBtn);
@@ -28,10 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
     newNoBtn.addEventListener('click', () => modal.classList.remove('open'));
   }
 
+  // --- ЗАЯВКИ ---
   async function loadBookings() {
     const tbody = document.getElementById('bookings-list');
     try {
       const res = await fetch('/api/admin/bookings');
+      if (!res.ok) return;
       const data = await res.json();
       tbody.innerHTML = data.map(b => `
         <tr>
@@ -67,10 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  // --- КЛИЕНТЫ ---
   async function loadClients() {
     const tbody = document.getElementById('clients-list');
     try {
       const res = await fetch('/api/admin/clients');
+      if (!res.ok) return;
       const data = await res.json();
       tbody.innerHTML = data.map(c => `
         <tr>
@@ -92,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
+  // --- МАШИНЫ ---
   const carModal = document.getElementById('car-modal');
   const carForm = document.getElementById('car-form');
   let allCars = [];
@@ -169,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCars();
   });
 
+  // --- УСЛУГИ ---
   const srvModal = document.getElementById('service-modal');
   const srvForm = document.getElementById('service-form');
   let allServices = [];
@@ -237,10 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
   });
 
+  // --- ОТЗЫВЫ ---
   async function loadReviews() {
     const tbody = document.getElementById('reviews-list');
     try {
       const res = await fetch('/api/admin/reviews');
+      if (!res.ok) return;
       const data = await res.json();
       tbody.innerHTML = data.map(r => `
         <tr>
@@ -263,15 +349,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  loadBookings(); loadClients(); loadCars(); loadServices(); loadReviews();
+  function loadData() {
+    loadBookings(); loadClients(); loadCars(); loadServices(); loadReviews();
+  }
+
+  initAdminUI();
 
   setInterval(() => {
+    if (!localStorage.getItem('kanjo_admin_token')) return;
     if (document.querySelector('.modal.open')) return; 
-    const activeTab = document.querySelector('.tab-btn.active').dataset.target;
-    if (activeTab === 'bookings') loadBookings();
-    if (activeTab === 'cars') loadCars();
-    if (activeTab === 'services') loadServices();
-    if (activeTab === 'clients') loadClients();
-    if (activeTab === 'reviews') loadReviews();
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (!activeTab) return;
+    const target = activeTab.dataset.target;
+    if (target === 'bookings') loadBookings();
+    if (target === 'cars') loadCars();
+    if (target === 'services') loadServices();
+    if (target === 'clients') loadClients();
+    if (target === 'reviews') loadReviews();
   }, 5000);
 });

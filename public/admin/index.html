@@ -9,10 +9,13 @@
 <body>
   <header>
     <div class="logo">KANJO<span>_</span>ADMIN</div>
-    <a href="/" class="btn-back">← На сайт</a>
+    <div style="display: flex; gap: 20px; align-items: center;">
+      <button id="btn-logout" class="btn-gray" style="padding: 8px 16px; font-size: 14px; display: none;">Выйти</button>
+      <a href="/" class="btn-back">← На сайт</a>
+    </div>
   </header>
 
-  <div class="tabs">
+  <div class="tabs" id="admin-tabs" style="display: none;">
     <button class="tab-btn active" data-target="bookings">Заявки</button>
     <button class="tab-btn" data-target="cars">Машины</button>
     <button class="tab-btn" data-target="services">Услуги</button>
@@ -20,13 +23,11 @@
     <button class="tab-btn" data-target="reviews">Отзывы</button>
   </div>
 
-  <main>
+  <main id="admin-main" style="display: none;">
     <section id="bookings" class="tab-content active">
       <h2>Входящие заявки</h2>
       <table class="admin-table">
-        <thead>
-          <tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Проект</th><th>Статус</th><th>Причина отмены</th><th>Дата</th><th>Действия</th></tr>
-        </thead>
+        <thead><tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Проект</th><th>Статус</th><th>Причина отмены</th><th>Дата</th><th>Действия</th></tr></thead>
         <tbody id="bookings-list"></tbody>
       </table>
     </section>
@@ -56,9 +57,7 @@
     <section id="clients" class="tab-content">
       <h2>Зарегистрированные клиенты</h2>
       <table class="admin-table">
-        <thead>
-          <tr><th>ID</th><th>Email</th><th>Имя</th><th>Телефон</th><th>Дата регистрации</th><th>Действия</th></tr>
-        </thead>
+        <thead><tr><th>ID</th><th>Email</th><th>Имя</th><th>Телефон</th><th>Дата регистрации</th><th>Действия</th></tr></thead>
         <tbody id="clients-list"></tbody>
       </table>
     </section>
@@ -66,14 +65,26 @@
     <section id="reviews" class="tab-content">
       <h2>Отзывы клиентов</h2>
       <table class="admin-table">
-        <thead>
-          <tr><th>ID</th><th>Имя</th><th>Оценка</th><th>За что</th><th>Текст</th><th>Дата</th><th>Действия</th></tr>
-        </thead>
+        <thead><tr><th>ID</th><th>Имя</th><th>Оценка</th><th>За что</th><th>Текст</th><th>Дата</th><th>Действия</th></tr></thead>
         <tbody id="reviews-list"></tbody>
       </table>
     </section>
   </main>
 
+  <!-- МОДАЛКА ЛОГИНА -->
+  <div id="login-modal" class="modal open" style="display: flex; opacity: 1; pointer-events: auto;">
+    <div class="modal-content" style="max-width: 400px;">
+      <h3 style="font-size: 32px; text-align: center; margin-bottom: 30px;">ВХОД В АДМИНКУ</h3>
+      <form id="login-form">
+        <input type="text" id="admin-login" placeholder="Логин" required style="width: 100%; padding: 15px; background: var(--bg); border: 1px solid var(--border); color: var(--text); margin-bottom: 15px; outline: none;">
+        <input type="password" id="admin-pass" placeholder="Пароль" required style="width: 100%; padding: 15px; background: var(--bg); border: 1px solid var(--border); color: var(--text); margin-bottom: 20px; outline: none;">
+        <button type="submit" class="btn-red" style="width: 100%;">ВОЙТИ</button>
+        <p id="login-error" style="color: red; text-align: center; margin-top: 15px; display: none;"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ОСТАЛЬНЫЕ МОДАЛКИ -->
   <div id="admin-confirm-modal" class="modal">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
       <h3 id="admin-confirm-text" style="font-size: 24px; margin-bottom: 20px; color: var(--red); font-family: var(--font-display);">Вы уверены?</h3>
