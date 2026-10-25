@@ -155,8 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.deleteAdminBooking = (id) => {
     showAdminConfirm('Вы уверены, что хотите навсегда удалить эту заявку?', async () => {
-      await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
-      loadBookings();
+      try {
+        const res = await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          alert('Ошибка: ' + (data.error || 'Не удалось удалить. Возможно, на эту заявку уже написан отзыв.'));
+        } else {
+          loadBookings();
+        }
+      } catch (err) { alert('Ошибка сети'); }
     });
   };
 
@@ -182,8 +189,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.deleteClient = (id) => {
     showAdminConfirm('Удалить клиента? Все его заявки и сборки также будут удалены.', async () => {
-      await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
-      loadClients(); loadBookings();
+      try {
+        const res = await fetch(`/api/admin/clients/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          alert('Ошибка: ' + (data.error || 'Не удалось удалить клиента.'));
+        } else {
+          loadClients(); loadBookings();
+        }
+      } catch (err) { alert('Ошибка сети'); }
     });
   };
 
@@ -238,8 +252,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.deleteCar = (id) => {
     showAdminConfirm('Вы уверены, что хотите удалить эту машину?', async () => {
-      await fetch(`/api/admin/cars/${id}`, { method: 'DELETE' });
-      loadCars();
+      try {
+        const res = await fetch(`/api/admin/cars/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          alert('Ошибка: ' + (data.error || 'Не удалось удалить машину.'));
+        } else {
+          loadCars();
+        }
+      } catch (err) { alert('Ошибка сети'); }
     });
   };
 
@@ -309,8 +330,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.deleteService = (id) => {
     showAdminConfirm('Вы уверены, что хотите удалить эту услугу?', async () => {
-      await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
-      loadServices();
+      try {
+        const res = await fetch(`/api/admin/services/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          alert('Ошибка: ' + (data.error || 'Не удалось удалить услугу.'));
+        } else {
+          loadServices();
+        }
+      } catch (err) { alert('Ошибка сети'); }
     });
   };
 
@@ -354,8 +382,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.deleteReview = (id) => {
     showAdminConfirm('Удалить этот отзыв?', async () => {
-      await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
-      loadReviews();
+      try {
+        const res = await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const data = await res.json();
+          alert('Ошибка: ' + (data.error || 'Не удалось удалить отзыв.'));
+        } else {
+          loadReviews();
+        }
+      } catch (err) { alert('Ошибка сети'); }
     });
   };
 

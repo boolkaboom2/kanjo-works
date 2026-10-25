@@ -84,14 +84,35 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
+
+    const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
+    if (parseInt(checkCars.rows[0].count) === 0) {
+      const initialCars = [
+        ['NISSAN SILVIA S15', 'SR20DET // 450HP', 'img/car1.jpg', 'SR20DET', '450 HP', '1240 kg', 'RWD', '4.5 sec', 'Классика дрифта.'],
+        ['TOYOTA SUPRA MK4', '2JZ-GTE // 800HP', 'img/car2.jpg', '2JZ-GTE', '800 HP', '1510 kg', 'RWD', '3.8 sec', 'Легенда.'],
+        ['MAZDA RX-7 FD3S', '13B-REW // 500HP', 'img/car3.jpg', '13B-REW', '500 HP', '1270 kg', 'RWD', '4.0 sec', 'Роторный.'],
+        ['HONDA NSX NA1', 'C30A // 350HP', 'img/car4.jpg', 'C30A', '350 HP', '1370 kg', 'RWD', '4.8 sec', 'Суперкар.'],
+        ['SUBARU IMPREZA 22B', 'EJ22 // 400HP', 'img/car5.jpg', 'EJ22', '400 HP', '1270 kg', 'AWD', '4.2 sec', 'Ралли.']
+      ];
+      for (let c of initialCars) await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, c);
+    }
+    
+    const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
+    if (parseInt(checkSrv.rows[0].count) === 0) {
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('01', 'ENGINE SWAP', 'Свап двигателей.', 'Свапы.', 'Снятие\nУстановка', 'от 250 000 ₽')`);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('02', 'AERO KIT', 'Обвесы.', 'Аэродинамика.', 'Разметка\nПокраска', 'от 120 000 ₽')`);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('03', 'ECU TUNING', 'Прошивка.', 'Настройка.', 'Стенд\nТест', 'от 80 000 ₽')`);
+    }
   } catch (err) { console.error('DB Init Error:', err); }
 }
 initDB();
 
+// ИСПРАВЛЕНА ОТПРАВКА В TG (убрали markdown)
 async function sendTelegramMessage(text, bookingId, phone = null, telegram = null) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
-    const body = { chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'Markdown' };
+    const body = { chat_id: TELEGRAM_CHAT_ID, text: text }; 
+    
     if (bookingId) {
       const buttons = [{ text: '✅ Выполнено', callback_data: `done_${bookingId}` }];
       
@@ -99,17 +120,24 @@ async function sendTelegramMessage(text, bookingId, phone = null, telegram = nul
         const cleanTg = telegram.replace('@', '').replace('https://t.me/', '').replace('t.me/', '');
         buttons.push({ text: '💬 Написать в TG', url: `https://t.me/${cleanTg}` });
       } else if (phone) {
-        buttons.push({ text: '📞 Позвонить', url: `tel:${phone.replace(/\D/g, '')}` });
+        const cleanPhone = phone.replace(/\D/g, ''); 
+        buttons.push({ text: '📞 Позвонить', url: `tel:+${cleanPhone}` }); 
       }
       
       body.reply_markup = { inline_keyboard: [buttons] };
     }
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { 
+    
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { 
       method: 'POST', 
       headers: { 'Content-Type': 'application/json' }, 
       body: JSON.stringify(body) 
     });
-  } catch (error) { console.error('[TELEGRAM ERROR]', error.message); }
+    
+    if (!res.ok) {
+      const errData = await res.json();
+      console.error('[TELEGRAM API ERROR]', errData);
+    }
+  } catch (error) { console.error('[TELEGRAM NETWORK ERROR]', error.message); }
 }
 
 const authMiddleware = (req, res, next) => {
@@ -203,7 +231,6 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
   const { name, phone, email, password, telegram } = req.body;
   
   try {
-    // Проверка email на занятость, если он меняется
     if (email) {
       const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, req.user.userId]);
       if (emailCheck.rows.length > 0) return res.status(400).json({ error: 'Этот email уже занят другим пользователем' });
@@ -212,7 +239,6 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
     let updateQuery = `UPDATE users SET name = $1, phone = $2, telegram = $3, email = $4 WHERE id = $5 RETURNING id, email, name, phone, telegram`;
     let params = [name, phone, telegram, email, req.user.userId];
 
-    // Если передан новый пароль — хэшируем и добавляем в запрос
     if (password && password.trim() !== '') {
       if (password.length < 6) return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
       const hash = await bcrypt.hash(password, 10);
@@ -276,7 +302,7 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     const checkOrders = await pool.query('SELECT COUNT(*) FROM bookings WHERE user_id = $1', [userId]);
     if (parseInt(checkOrders.rows[0].count) === 0) {
       finalPrice = Math.round(finalPrice * 0.95);
-      discountText = '\n💸 *Скидка 5% применена (Первый проект)*';
+      discountText = '\n💸 Скидка 5% применена (Первый проект)';
     }
   }
 
@@ -288,9 +314,8 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     const bookingId = result.rows[0].id;
     res.status(201).json({ message: 'Заявка принята' });
     
-    // Если тумблер выключен, клиент прислал telegram = null, пишем "Скрыт"
-    const tgText = telegram ? `\n✈️ *TG:* ${telegram}` : `\n✈️ *TG:* Клиент предпочел скрыть TG`;
-    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}${tgText}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone, telegram);
+    const tgText = telegram ? `\n✈️ TG: ${telegram}` : `\n✈️ TG: Клиент предпочел скрыть TG`;
+    sendTelegramMessage(`🚨 НОВАЯ ЗАЯВКА 🚨\n\n👤 Имя: ${name}\n📞 Тел: ${phone}${tgText}\n🚗 Проект: ${car}${finalPrice ? `\n💰 Цена: ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone, telegram);
     
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -312,7 +337,7 @@ app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
     
     if (result.rowCount > 0) {
       const b = result.rows[0];
-      sendTelegramMessage(`❌ *КЛИЕНТ ОТМЕНИЛ ЗАЯВКУ* ❌\n\n👤 *Имя:* ${b.name}\n📞 *Тел:* ${b.phone}\n🚗 *Проект:* ${b.car}\n📝 *Причина:* ${reason || 'Не указана'}`, null);
+      sendTelegramMessage(`❌ КЛИЕНТ ОТМЕНИЛ ЗАЯВКУ ❌\n\n👤 Имя: ${b.name}\n📞 Тел: ${b.phone}\n🚗 Проект: ${b.car}\n📝 Причина: ${reason || 'Не указана'}`, null);
     }
     
     res.json({ message: 'Заявка отменена' });
@@ -407,7 +432,7 @@ app.post('/api/telegram-webhook', async (req, res) => {
       });
       await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/editMessageText`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: callback_query.message.text + '\n\n✅ *СТАТУС: ВЫПОЛНЕНО*', parse_mode: 'Markdown' })
+        body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: callback_query.message.text + '\n\n✅ СТАТУС: ВЫПОЛНЕНО' })
       });
     } catch (err) { console.error(err); }
   }

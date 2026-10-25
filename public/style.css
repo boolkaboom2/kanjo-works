@@ -270,3 +270,55 @@ header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex
   .ctrl-btn { font-size: 14px; }
   .time-display { font-size: 10px; min-width: 60px; }
 }
+/* Стили для тумблера TG */
+.tg-toggle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-switch .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border);
+  transition: .4s;
+  border-radius: 34px;
+}
+.toggle-switch .slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--grey);
+  transition: .4s;
+  border-radius: 50%;
+}
+.toggle-switch input:checked + .slider {
+  background-color: var(--red);
+}
+.toggle-switch input:checked + .slider:before {
+  transform: translateX(16px);
+  background-color: #fff;
+}
+.tg-label {
+  font-size: 10px;
+  color: var(--grey);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
