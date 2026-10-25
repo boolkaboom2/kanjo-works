@@ -452,22 +452,63 @@
   });
   stars.forEach(s => { if (parseInt(s.dataset.val) <= currentRating) s.style.color = 'var(--red)'; });
 
-  async function loadUserReviews() {
+    async function loadUserReviews() {
     const list = document.getElementById('profile-reviews-list'); 
     const formContainer = document.getElementById('review-form-container');
-    const select = document.getElementById('review-booking-select');
+    
+    const selectTrigger = document.getElementById('review-select-trigger');
+    const selectOptions = document.getElementById('review-select-options');
+    const selectedText = document.getElementById('review-selected-text');
+    const hiddenInput = document.getElementById('review-booking-id');
+    const customSelect = document.getElementById('review-select-container');
+
     list.innerHTML = 'Загрузка...';
+    
     const bookingsRes = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
     const bookings = await bookingsRes.json();
+    
     const reviewsRes = await fetch('/api/reviews');
     const allReviews = await reviewsRes.json();
     const userReviews = allReviews.filter(r => r.name === currentUser?.name);
+
     const completedBookings = bookings.filter(b => b.status === 'Выполнена');
     const unreviewedBookings = completedBookings.filter(b => !userReviews.some(r => r.booking_id === b.id));
+
     if (unreviewedBookings.length > 0) {
       formContainer.style.display = 'block';
-      select.innerHTML = unreviewedBookings.map(b => `<option value="${b.id}">${escapeHTML(b.car)}</option>`).join('');
-    } else { formContainer.style.display = 'none'; }
+      
+      // Заполняем кастомный селект
+      selectOptions.innerHTML = unreviewedBookings.map(b => `<div class="select-option" data-val="${b.id}">${escapeHTML(b.car)}</div>`).join('');
+      
+      // Устанавливаем первое значение по умолчанию
+      selectedText.textContent = unreviewedBookings[0].car;
+      hiddenInput.value = unreviewedBookings[0].id;
+
+      // Обработчик клика по опциям
+      document.querySelectorAll('#review-select-options .select-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          selectedText.textContent = opt.textContent;
+          hiddenInput.value = opt.dataset.val;
+          customSelect.classList.remove('open');
+        });
+      });
+
+      // Обработчик открытия/закрытия
+      if (!selectTrigger.hasAttribute('data-listener')) {
+        selectTrigger.setAttribute('data-listener', 'true');
+        selectTrigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          customSelect.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+          if (customSelect && !customSelect.contains(e.target)) customSelect.classList.remove('open');
+        });
+      }
+
+    } else {
+      formContainer.style.display = 'none'; 
+    }
+
     list.innerHTML = userReviews.length ? userReviews.map(r => `
       <div class="profile-card">
         <div class="profile-card-info">
@@ -479,11 +520,13 @@
     `).join('') : '<p>Вы пока не оставляли отзывов.</p>';
   }
 
-  document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
+   document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
     const text = document.getElementById('review-text').value;
-    const bookingId = document.getElementById('review-booking-select').value;
+    const bookingId = document.getElementById('review-booking-id').value; // Берем из hidden input
+
     if (!text) return showToast('Напишите текст отзыва', 'error');
     if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');
+    
     try {
       const res = await fetch('/api/user/reviews', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -495,7 +538,9 @@
         document.getElementById('review-text').value = '';
         loadUserReviews();
         loadMainReviews();
-      } else { showToast(data.error, 'error'); }
+      } else {
+        showToast(data.error, 'error');
+      }
     } catch (err) { showToast('Ошибка отправки', 'error'); }
   });
 

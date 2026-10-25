@@ -248,18 +248,36 @@
       <div id="profile-tab-reviews" style="display: none;">
         <div id="review-form-container" style="margin-bottom: 20px; display: none;">
           <h3 style="font-family: var(--font-display); font-size: 24px; color: var(--red); margin-bottom: 10px;">Оставить отзыв</h3>
-          <div class="input-group" style="margin-bottom: 10px;">
+          
+          <div class="input-group" style="margin-bottom: 20px; position: relative; z-index: 50;">
             <label style="color:var(--grey); font-size:12px; margin-bottom:5px; display:block;">Выберите выполненную работу:</label>
-            <select id="review-booking-select" style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; font-family: var(--font-body); outline: none;"></select>
+            
+            <!-- КАСТОМНЫЙ СЕЛЕКТ ДЛЯ ОТЗЫВОВ -->
+            <div class="custom-select" id="review-select-container">
+              <div class="select-trigger" id="review-select-trigger">
+                <span id="review-selected-text">Нет работ</span>
+                <span class="select-arrow">▼</span>
+              </div>
+              <div class="select-options" id="review-select-options"></div>
+            </div>
+            <input type="hidden" id="review-booking-id">
+            
           </div>
+
           <textarea id="review-text" placeholder="Ваш отзыв..." style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; font-family: var(--font-body); margin-bottom: 10px; resize: none;" rows="3"></textarea>
+          
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
             <span style="font-size: 14px; color: var(--grey);">Оценка:</span>
             <div id="star-rating" style="display: flex; gap: 5px; cursor: pointer;">
-              <span class="star" data-val="1">★</span><span class="star" data-val="2">★</span><span class="star" data-val="3">★</span><span class="star" data-val="4">★</span><span class="star" data-val="5">★</span>
+              <span class="star" data-val="1">★</span>
+              <span class="star" data-val="2">★</span>
+              <span class="star" data-val="3">★</span>
+              <span class="star" data-val="4">★</span>
+              <span class="star" data-val="5">★</span>
             </div>
             <span id="selected-rating-text" style="font-size: 14px; color: var(--text);">5/5</span>
           </div>
+
           <button id="btn-submit-review" class="btn-racing" style="font-size: 16px; padding: 10px 20px;">ОТПРАВИТЬ</button>
         </div>
         <div id="profile-reviews-list" style="max-height: 30vh; overflow-y: auto;"></div>
