@@ -3,15 +3,7 @@
 
   function escapeHTML(str) {
     if (!str) return '';
-    return String(str).replace(/[&<>'"]/g, 
-      tag => ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        }[tag] || tag)
-    );
+    return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
   }
 
   window.addEventListener('load', async () => {
@@ -42,7 +34,6 @@
     const container = document.getElementById('toast-container');
     const creditsBtn = document.getElementById('credits-btn');
     if (creditsBtn) creditsBtn.classList.add('hidden');
-
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()">✕</button>`;
@@ -50,10 +41,7 @@
     setTimeout(() => { toast.classList.add('show'); }, 10);
     setTimeout(() => {
       toast.classList.remove('show');
-      setTimeout(() => {
-        toast.remove();
-        if (container.children.length === 0 && creditsBtn) creditsBtn.classList.remove('hidden');
-      }, 300);
+      setTimeout(() => { toast.remove(); if (container.children.length === 0 && creditsBtn) creditsBtn.classList.remove('hidden'); }, 300);
     }, 4000);
   }
 
@@ -115,7 +103,6 @@
   async function loadCars() {
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     const res = await fetch('/api/cars'); carsData = await res.json();
-    
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
@@ -126,11 +113,9 @@
         closeAllModals(); document.getElementById('car-modal').classList.add('open');
       });
     });
-
     if (optionsContainer && carsData.length > 0) {
       optionsContainer.innerHTML = carsData.map(c => `<div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${escapeHTML(c.title)}</div>`).join('');
       optionsContainer.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
-
       document.querySelectorAll('.select-option').forEach(opt => {
         opt.addEventListener('click', () => {
           selectedText.textContent = opt.textContent;
@@ -138,7 +123,6 @@
           customSelect.classList.remove('open'); calculateConfig();
         });
       });
-
       const firstOpt = document.querySelector('.select-option');
       if (firstOpt) {
         selectedText.textContent = firstOpt.textContent;
@@ -187,7 +171,6 @@
   const closeAllModals = () => document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
   document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', closeAllModals));
   document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeAllModals(); }));
-  document.querySelectorAll('.open-booking').forEach(b => b.addEventListener('click', () => { closeAllModals(); document.getElementById('booking-modal').classList.add('open'); playSound('modal'); }));
 
   const confirmModal = document.getElementById('confirm-modal');
   const confirmText = document.getElementById('confirm-text');
@@ -213,16 +196,10 @@
     const reason = document.getElementById('cancel-reason-input').value || 'Не указана';
     try {
       const res = await fetch(`/api/user/bookings/${currentCancelId}/cancel`, { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
         body: JSON.stringify({ reason })
       });
-      if (res.ok) { 
-        cancelModal.classList.remove('open');
-        loadBookings(); 
-        showToast('Заявка отменена', 'success'); 
-        loadProfile(); 
-      }
+      if (res.ok) { cancelModal.classList.remove('open'); loadBookings(); showToast('Заявка отменена', 'success'); loadProfile(); }
     } catch (err) { showToast('Ошибка', 'error'); }
   });
 
@@ -250,7 +227,6 @@
     document.getElementById('auth-form').reset(); document.getElementById('verify-form').reset();
     document.getElementById('auth-step-1').style.display = 'block'; document.getElementById('auth-step-2').style.display = 'none';
     document.getElementById('auth-error').style.display = 'none';
-    
     const loginTab = document.querySelector('.auth-tab[data-mode="login"]');
     if (loginTab) {
       document.querySelectorAll('.auth-tab[data-mode]').forEach(t => t.classList.remove('active'));
@@ -301,7 +277,6 @@
     try {
       const res = await fetch(isLogin ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json(); 
-      
       if (!res.ok) {
         if (data.needsVerify) {
           tempEmail = data.email; document.getElementById('auth-step-1').style.display = 'none';
@@ -309,7 +284,6 @@
         }
         throw new Error(data.error);
       }
-      
       if (isLogin) {
         authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
         updateAuthUI(); authModal.classList.remove('open'); e.target.reset();
@@ -330,7 +304,6 @@
     try {
       const res = await fetch('/api/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: tempEmail, code }) });
       const data = await res.json(); if (!res.ok) throw new Error(data.error);
-      
       authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
       updateAuthUI(); authModal.classList.remove('open'); 
       document.getElementById('auth-step-1').style.display = 'block'; document.getElementById('auth-step-2').style.display = 'none';
@@ -356,6 +329,14 @@
       const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
       if (res.ok) { 
         currentUser = await res.json(); 
+        
+        // Заполняем форму профиля
+        document.getElementById('edit-name').value = currentUser.name || '';
+        document.getElementById('edit-phone').value = currentUser.phone || '';
+        document.getElementById('edit-email').value = currentUser.email || '';
+        document.getElementById('edit-telegram').value = currentUser.telegram || '';
+        document.getElementById('edit-password').value = '';
+
         const bookRes = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
         const bookings = await bookRes.json();
         currentUser.hasOrders = bookings.length > 0;
@@ -368,12 +349,14 @@
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); loadUserReviews(); });
 
+  // --- ВКЛАДКИ ПРОФИЛЯ ---
   const tabsList = document.querySelectorAll('.auth-tabs .auth-tab');
   tabsList.forEach(tab => {
     tab.addEventListener('click', (e) => {
       tabsList.forEach(t => t.classList.remove('active'));
       e.target.classList.add('active');
       
+      document.getElementById('profile-tab-profile').style.display = 'none';
       document.getElementById('profile-tab-bookings').style.display = 'none';
       document.getElementById('profile-tab-builds').style.display = 'none';
       document.getElementById('profile-tab-reviews').style.display = 'none';
@@ -385,6 +368,33 @@
       if (targetId === 'profile-tab-builds') loadBuilds();
       if (targetId === 'profile-tab-reviews') loadUserReviews();
     });
+  });
+
+  // --- СОХРАНЕНИЕ ПРОФИЛЯ ---
+  document.getElementById('profile-edit-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('profile-msg');
+    const body = {
+      name: document.getElementById('edit-name').value,
+      phone: document.getElementById('edit-phone').value,
+      email: document.getElementById('edit-email').value,
+      telegram: document.getElementById('edit-telegram').value,
+      password: document.getElementById('edit-password').value
+    };
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 3000);
+        currentUser = data.user; // Обновляем локальные данные
+        document.getElementById('edit-password').value = '';
+        showToast('Профиль обновлен', 'success');
+      } else { showToast(data.error, 'error'); }
+    } catch (err) { showToast('Ошибка сервера', 'error'); }
   });
 
   async function loadBookings() {
@@ -446,26 +456,18 @@
     const list = document.getElementById('profile-reviews-list'); 
     const formContainer = document.getElementById('review-form-container');
     const select = document.getElementById('review-booking-select');
-    
     list.innerHTML = 'Загрузка...';
-    
     const bookingsRes = await fetch('/api/user/bookings', { headers: { 'Authorization': `Bearer ${authToken}` } });
     const bookings = await bookingsRes.json();
-    
     const reviewsRes = await fetch('/api/reviews');
     const allReviews = await reviewsRes.json();
     const userReviews = allReviews.filter(r => r.name === currentUser?.name);
-
     const completedBookings = bookings.filter(b => b.status === 'Выполнена');
     const unreviewedBookings = completedBookings.filter(b => !userReviews.some(r => r.booking_id === b.id));
-
     if (unreviewedBookings.length > 0) {
       formContainer.style.display = 'block';
       select.innerHTML = unreviewedBookings.map(b => `<option value="${b.id}">${escapeHTML(b.car)}</option>`).join('');
-    } else {
-      formContainer.style.display = 'none'; 
-    }
-
+    } else { formContainer.style.display = 'none'; }
     list.innerHTML = userReviews.length ? userReviews.map(r => `
       <div class="profile-card">
         <div class="profile-card-info">
@@ -480,10 +482,8 @@
   document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
     const text = document.getElementById('review-text').value;
     const bookingId = document.getElementById('review-booking-select').value;
-
     if (!text) return showToast('Напишите текст отзыва', 'error');
     if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');
-    
     try {
       const res = await fetch('/api/user/reviews', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
@@ -495,9 +495,7 @@
         document.getElementById('review-text').value = '';
         loadUserReviews();
         loadMainReviews();
-      } else {
-        showToast(data.error, 'error');
-      }
+      } else { showToast(data.error, 'error'); }
     } catch (err) { showToast('Ошибка отправки', 'error'); }
   });
 
@@ -508,14 +506,23 @@
     const name = form.querySelector('.booking-name').value;
     const phone = form.querySelector('.phone-input').value;
     const car = form.querySelector('.booking-car').value;
-    const telegram = form.querySelector('.tg-input').value.trim();
+    
+    // Логика TG
+    const tgInput = form.querySelector('.tg-input');
+    const tgToggle = form.querySelector('.tg-toggle');
+    let telegram = tgInput ? tgInput.value.trim() : null;
+    
+    // Если тумблер есть и он выключен, значит клиент скрывает TG
+    if (tgToggle && !tgToggle.checked) {
+      telegram = null; 
+    }
+
     const price = form.querySelector('.booking-price-input') ? form.querySelector('.booking-price-input').value : null;
 
     btn.textContent = 'ОТПРАВКА...';
     try {
       const headers = { 'Content-Type': 'application/json' }; if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
       const res = await fetch('/api/book', { method: 'POST', headers, body: JSON.stringify({ name, phone, car, price, telegram }) });
-      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка отправки');
 
@@ -531,6 +538,27 @@
   document.getElementById('booking-form').addEventListener('submit', handleForm);
   document.getElementById('inline-booking-form').addEventListener('submit', handleForm);
 
+  // Вспомогательная функция для настройки TG инпута в формах
+  function setupTgField(form) {
+    if (!currentUser) return;
+    const tgInput = form.querySelector('.tg-input');
+    const tgToggleWrap = form.querySelector('.tg-toggle-wrap');
+    const tgToggle = form.querySelector('.tg-toggle');
+
+    if (currentUser.telegram) {
+      tgInput.value = currentUser.telegram;
+      tgInput.readOnly = true; // Клиент не может стереть
+      tgInput.style.opacity = '0.7';
+      tgToggleWrap.style.display = 'block';
+      tgToggle.checked = true; // По умолчанию "Да"
+    } else {
+      tgInput.value = '';
+      tgInput.readOnly = false;
+      tgInput.style.opacity = '1';
+      tgToggleWrap.style.display = 'none';
+    }
+  }
+
   document.getElementById('btn-book-build').addEventListener('click', () => {
     const car = selectedText.textContent;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
@@ -543,7 +571,7 @@
     if (currentUser) {
       form.querySelector('.booking-name').value = currentUser.name || '';
       form.querySelector('.phone-input').value = currentUser.phone || '';
-      form.querySelector('.tg-input').value = currentUser.telegram || '';
+      setupTgField(form); // Настраиваем TG
       form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
@@ -554,13 +582,11 @@
     const bookingModal = document.getElementById('booking-modal');
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
-    
     form.querySelector('.booking-car').value = carName;
-    
     if (currentUser) {
       form.querySelector('.booking-name').value = currentUser.name || '';
       form.querySelector('.phone-input').value = currentUser.phone || '';
-      form.querySelector('.tg-input').value = currentUser.telegram || '';
+      setupTgField(form);
       form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
@@ -571,13 +597,11 @@
     const bookingModal = document.getElementById('booking-modal');
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
-    
     form.querySelector('.booking-car').value = srvName; 
-    
     if (currentUser) {
       form.querySelector('.booking-name').value = currentUser.name || '';
       form.querySelector('.phone-input').value = currentUser.phone || '';
-      form.querySelector('.tg-input').value = currentUser.telegram || '';
+      setupTgField(form);
       form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
@@ -586,7 +610,6 @@
     if (!authToken) { authModal.classList.add('open'); return; }
     const car = selectedText.textContent;
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
-    
     try {
       const res = await fetch('/api/user/save-build', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },

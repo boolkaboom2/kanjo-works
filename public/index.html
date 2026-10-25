@@ -100,7 +100,15 @@
             <div class="input-group"><input type="text" class="booking-name" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
             <div class="input-group"><input type="tel" class="phone-input" placeholder="+7 (___) ___-__-__" required><span class="error-msg"></span></div>
             <div class="input-group"><input type="text" class="booking-car" placeholder="CAR / SERVICE" required><span class="error-msg"></span></div>
-            <div class="input-group"><input type="text" class="tg-input" placeholder="@USERNAME (для связи в TG)"><span class="error-msg"></span></div>
+            
+            <div class="input-group tg-group" style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
+              <input type="text" class="tg-input" placeholder="@USERNAME (для связи в TG)" style="flex:1;">
+              <div class="tg-toggle-wrap" style="display:none; text-align:center;">
+                <span style="font-size: 10px; color: var(--grey); display:block; margin-bottom:2px;">Связаться?</span>
+                <input type="checkbox" class="tg-toggle" checked style="width:18px; height:18px; cursor:pointer; accent-color: var(--red);">
+              </div>
+            </div>
+
             <input type="hidden" class="booking-price-input">
             <div class="discount-hint" style="display: none; color: #10b981; font-size: 12px; margin-bottom: 10px;">Скидка 5% применена!</div>
             <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
@@ -120,7 +128,15 @@
         <div class="input-group"><input type="text" class="booking-name" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
         <div class="input-group"><input type="tel" class="phone-input" placeholder="+7 (___) ___-__-__" required><span class="error-msg"></span></div>
         <div class="input-group"><input type="text" class="booking-car" placeholder="CAR / SERVICE" required><span class="error-msg"></span></div>
-        <div class="input-group"><input type="text" class="tg-input" placeholder="@USERNAME (для связи в TG)"><span class="error-msg"></span></div>
+        
+        <div class="input-group tg-group" style="display:flex; align-items:center; gap:10px; margin-bottom: 20px;">
+          <input type="text" class="tg-input" placeholder="@USERNAME (для связи в TG)" style="flex:1;">
+          <div class="tg-toggle-wrap" style="display:none; text-align:center;">
+            <span style="font-size: 10px; color: var(--grey); display:block; margin-bottom:2px;">Связаться?</span>
+            <input type="checkbox" class="tg-toggle" checked style="width:18px; height:18px; cursor:pointer; accent-color: var(--red);">
+          </div>
+        </div>
+
         <input type="hidden" class="booking-price-input">
         <div class="discount-hint" style="display: none; color: #10b981; font-size: 12px; margin-bottom: 10px;">Скидка 5% применена!</div>
         <button type="submit" class="btn-racing full-width">SEND REQUEST</button>
@@ -196,38 +212,46 @@
         <h2 style="margin: 0;">ЛИЧНЫЙ КАБИНЕТ</h2>
         <button id="logout-btn" class="btn-racing" style="padding: 8px 16px; font-size: 16px;">ВЫЙТИ</button>
       </div>
+      
       <div class="auth-tabs" style="margin-bottom: 20px;">
-        <button class="auth-tab active" id="tab-btn-bookings">МОИ ЗАЯВКИ</button>
+        <button class="auth-tab active" id="tab-btn-profile">МОЙ ПРОФИЛЬ</button>
+        <button class="auth-tab" id="tab-btn-bookings">МОИ ЗАЯВКИ</button>
         <button class="auth-tab" id="tab-btn-builds">МОЙ ГАРАЖ</button>
         <button class="auth-tab" id="tab-btn-reviews">МОИ ОТЗЫВЫ</button>
       </div>
       
-      <div id="profile-tab-bookings"><div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
+      <div id="profile-tab-profile" style="display: block;">
+        <form id="profile-edit-form">
+          <div class="grid-2" style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div class="input-group"><label style="color:var(--grey); font-size:12px;">Имя</label><input type="text" id="edit-name" required></div>
+            <div class="input-group"><label style="color:var(--grey); font-size:12px;">Телефон</label><input type="tel" id="edit-phone" class="phone-input" required></div>
+            <div class="input-group"><label style="color:var(--grey); font-size:12px;">Email</label><input type="email" id="edit-email" required></div>
+            <div class="input-group"><label style="color:var(--grey); font-size:12px;">Telegram (@username)</label><input type="text" id="edit-telegram" placeholder="@username"></div>
+            <div class="input-group" style="grid-column: span 2;"><label style="color:var(--grey); font-size:12px;">Новый пароль (оставьте пустым, чтобы не менять)</label><input type="password" id="edit-password" placeholder="Новый пароль..."></div>
+          </div>
+          <button type="submit" class="btn-racing" style="margin-top: 10px; width: 100%;">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
+          <p id="profile-msg" style="color: #10b981; text-align: center; margin-top: 10px; display: none;">Профиль обновлен!</p>
+        </form>
+      </div>
+
+      <div id="profile-tab-bookings" style="display: none;"><div id="profile-bookings-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
       <div id="profile-tab-builds" style="display: none;"><div id="profile-builds-list" style="max-height: 50vh; overflow-y: auto;"></div></div>
       
       <div id="profile-tab-reviews" style="display: none;">
         <div id="review-form-container" style="margin-bottom: 20px; display: none;">
           <h3 style="font-family: var(--font-display); font-size: 24px; color: var(--red); margin-bottom: 10px;">Оставить отзыв</h3>
-          
           <div class="input-group" style="margin-bottom: 10px;">
             <label style="color:var(--grey); font-size:12px; margin-bottom:5px; display:block;">Выберите выполненную работу:</label>
             <select id="review-booking-select" style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; font-family: var(--font-body); outline: none;"></select>
           </div>
-
           <textarea id="review-text" placeholder="Ваш отзыв..." style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; font-family: var(--font-body); margin-bottom: 10px; resize: none;" rows="3"></textarea>
-          
           <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
             <span style="font-size: 14px; color: var(--grey);">Оценка:</span>
             <div id="star-rating" style="display: flex; gap: 5px; cursor: pointer;">
-              <span class="star" data-val="1">★</span>
-              <span class="star" data-val="2">★</span>
-              <span class="star" data-val="3">★</span>
-              <span class="star" data-val="4">★</span>
-              <span class="star" data-val="5">★</span>
+              <span class="star" data-val="1">★</span><span class="star" data-val="2">★</span><span class="star" data-val="3">★</span><span class="star" data-val="4">★</span><span class="star" data-val="5">★</span>
             </div>
             <span id="selected-rating-text" style="font-size: 14px; color: var(--text);">5/5</span>
           </div>
-
           <button id="btn-submit-review" class="btn-racing" style="font-size: 16px; padding: 10px 20px;">ОТПРАВИТЬ</button>
         </div>
         <div id="profile-reviews-list" style="max-height: 30vh; overflow-y: auto;"></div>
@@ -251,9 +275,7 @@
       <button class="close-modal">✕</button>
       <h2>ОТМЕНА ЗАЯВКИ</h2>
       <p>Пожалуйста, укажите причину отмены.</p>
-      <div class="input-group">
-        <input type="text" id="cancel-reason-input" placeholder="Причина отмены..." required>
-      </div>
+      <div class="input-group"><input type="text" id="cancel-reason-input" placeholder="Причина отмены..." required></div>
       <button class="btn-racing full-width" id="btn-confirm-cancel">ОТМЕНИТЬ ЗАЯВКУ</button>
     </div>
   </div>
@@ -264,12 +286,9 @@
     <div class="modal-content">
       <div class="video-wrapper">
         <video id="credits-video" src="img/Deep.mp4"></video>
-        
         <div class="custom-controls">
           <button id="play-pause-btn" class="ctrl-btn">▶</button>
-          <div class="progress-container" id="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
-          </div>
+          <div class="progress-container" id="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
           <span id="time-display" class="time-display">0:00 / 0:00</span>
           <button id="mute-btn" class="ctrl-btn">🔊</button>
           <button class="close-video ctrl-btn" id="close-video-btn">✕</button>

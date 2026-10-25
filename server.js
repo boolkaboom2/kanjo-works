@@ -84,25 +84,6 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
-
-    const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
-    if (parseInt(checkCars.rows[0].count) === 0) {
-      const initialCars = [
-        ['NISSAN SILVIA S15', 'SR20DET // 450HP', 'img/car1.jpg', 'SR20DET', '450 HP', '1240 kg', 'RWD', '4.5 sec', 'Классика дрифта.'],
-        ['TOYOTA SUPRA MK4', '2JZ-GTE // 800HP', 'img/car2.jpg', '2JZ-GTE', '800 HP', '1510 kg', 'RWD', '3.8 sec', 'Легенда.'],
-        ['MAZDA RX-7 FD3S', '13B-REW // 500HP', 'img/car3.jpg', '13B-REW', '500 HP', '1270 kg', 'RWD', '4.0 sec', 'Роторный.'],
-        ['HONDA NSX NA1', 'C30A // 350HP', 'img/car4.jpg', 'C30A', '350 HP', '1370 kg', 'RWD', '4.8 sec', 'Суперкар.'],
-        ['SUBARU IMPREZA 22B', 'EJ22 // 400HP', 'img/car5.jpg', 'EJ22', '400 HP', '1270 kg', 'AWD', '4.2 sec', 'Ралли.']
-      ];
-      for (let c of initialCars) await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, c);
-    }
-    
-    const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
-    if (parseInt(checkSrv.rows[0].count) === 0) {
-      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('01', 'ENGINE SWAP', 'Свап двигателей.', 'Свапы.', 'Снятие\nУстановка', 'от 250 000 ₽')`);
-      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('02', 'AERO KIT', 'Обвесы.', 'Аэродинамика.', 'Разметка\nПокраска', 'от 120 000 ₽')`);
-      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('03', 'ECU TUNING', 'Прошивка.', 'Настройка.', 'Стенд\nТест', 'от 80 000 ₽')`);
-    }
   } catch (err) { console.error('DB Init Error:', err); }
 }
 initDB();
@@ -217,6 +198,33 @@ app.get('/api/user/profile', authMiddleware, async (req, res) => {
   res.json(result.rows[0]);
 });
 
+app.put('/api/user/profile', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  const { name, phone, email, password, telegram } = req.body;
+  
+  try {
+    // Проверка email на занятость, если он меняется
+    if (email) {
+      const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, req.user.userId]);
+      if (emailCheck.rows.length > 0) return res.status(400).json({ error: 'Этот email уже занят другим пользователем' });
+    }
+
+    let updateQuery = `UPDATE users SET name = $1, phone = $2, telegram = $3, email = $4 WHERE id = $5 RETURNING id, email, name, phone, telegram`;
+    let params = [name, phone, telegram, email, req.user.userId];
+
+    // Если передан новый пароль — хэшируем и добавляем в запрос
+    if (password && password.trim() !== '') {
+      if (password.length < 6) return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
+      const hash = await bcrypt.hash(password, 10);
+      updateQuery = `UPDATE users SET name = $1, phone = $2, telegram = $3, email = $4, password_hash = $5 WHERE id = $6 RETURNING id, email, name, phone, telegram`;
+      params = [name, phone, telegram, email, hash, req.user.userId];
+    }
+
+    const result = await pool.query(updateQuery, params);
+    res.json({ message: 'Профиль обновлен', user: result.rows[0] });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/cars', async (req, res) => { const r = await pool.query('SELECT * FROM cars ORDER BY id ASC'); res.json(r.rows); });
 app.get('/api/services', async (req, res) => { const r = await pool.query('SELECT * FROM services ORDER BY id ASC'); res.json(r.rows); });
 
@@ -280,7 +288,8 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     const bookingId = result.rows[0].id;
     res.status(201).json({ message: 'Заявка принята' });
     
-    const tgText = telegram ? `\n✈️ *TG:* ${telegram}` : `\n✈️ *TG:* Не указан`;
+    // Если тумблер выключен, клиент прислал telegram = null, пишем "Скрыт"
+    const tgText = telegram ? `\n✈️ *TG:* ${telegram}` : `\n✈️ *TG:* Клиент предпочел скрыть TG`;
     sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}${tgText}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone, telegram);
     
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -384,7 +393,6 @@ app.delete('/api/admin/services/:id', adminAuthMiddleware, async (req, res) => {
 app.post('/api/telegram-webhook', async (req, res) => {
   const { callback_query } = req.body;
   if (!callback_query) return res.sendStatus(200);
-
   const data = callback_query.data;
   const chatId = callback_query.message.chat.id;
   const messageId = callback_query.message.message_id;
