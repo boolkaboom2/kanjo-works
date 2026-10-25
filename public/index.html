@@ -294,6 +294,40 @@
     </div>
   </div>
 
+  <!-- МОДАЛКА ОПЛАТЫ -->
+  <div id="payment-modal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal">✕</button>
+      <h2>ОПЛАТА ЗАКАЗА</h2>
+      <p>Безопасная эмуляция платежного шлюза.</p>
+      
+      <div style="background: #111; padding: 15px; border: 1px solid var(--border); margin-bottom: 20px; text-align: center;">
+        <div style="font-size: 12px; color: var(--grey); font-family: 'Courier New', monospace; text-transform: uppercase;">К оплате</div>
+        <div style="font-family: var(--font-display); font-size: 42px; color: var(--red); line-height: 1;"><span id="pay-amount">0</span> ₽</div>
+        <div id="pay-car" style="font-size: 14px; color: var(--text); margin-top: 5px;">...</div>
+      </div>
+
+      <form id="payment-form">
+        <div class="input-group">
+          <input type="text" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19" required style="font-family: monospace; letter-spacing: 2px;">
+          <span class="error-msg"></span>
+        </div>
+        <div style="display: flex; gap: 15px;">
+          <div class="input-group" style="flex: 1;">
+            <input type="text" id="card-expiry" placeholder="ММ/ГГ" maxlength="5" required style="font-family: monospace; letter-spacing: 2px;">
+            <span class="error-msg"></span>
+          </div>
+          <div class="input-group" style="flex: 1;">
+            <input type="password" id="card-cvv" placeholder="CVV" maxlength="3" required style="font-family: monospace; letter-spacing: 2px;">
+            <span class="error-msg"></span>
+          </div>
+        </div>
+        <button type="submit" class="btn-racing full-width" id="btn-pay-submit">ОПЛАТИТЬ</button>
+        <p style="text-align: center; font-size: 11px; color: var(--grey); margin-top: 15px; opacity: 0.6;">Демо-режим. Используйте карту 1111 1111 1111 1111</p>
+      </form>
+    </div>
+  </div>
+
   <div id="confirm-modal" class="modal">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
       <h2 id="confirm-text" style="font-size: 24px; margin-bottom: 20px; color: var(--text);">Вы уверены?</h2>

@@ -84,6 +84,7 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
+        await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE`);
   } catch (err) { console.error('DB Init Error:', err); }
 }
 initDB();
@@ -432,6 +433,29 @@ app.post('/api/telegram-webhook', async (req, res) => {
 // 404 Handler
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
+app.post('/api/user/bookings/:id/pay', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  
+  try {
+    // Эмуляция задержки банка
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const result = await pool.query(
+      `UPDATE bookings SET is_paid = TRUE WHERE id = $1 AND user_id = $2 AND status = 'Выполнена' RETURNING car, price`, 
+      [req.params.id, req.user.userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ error: 'Оплата невозможна. Заявка не выполнена или не найдена.' });
+    }
+
+    const b = result.rows[0];
+    sendTelegramMessage(`💸 *КЛИЕНТ ОПЛАТИЛ ЗАКАЗ* 💸\n\n🚗 *Проект:* ${b.car}\n💰 *Сумма:* ${b.price || 'Не указана'} ₽`, null);
+    
+    res.json({ message: 'Оплата прошла успешно!' });
+  } catch (err) { res.status(500).json({ error: 'Ошибка платежного шлюза' }); }
 });
 
 app.listen(PORT, () => console.log(`[SERVER] Запущен на порту ${PORT}`));

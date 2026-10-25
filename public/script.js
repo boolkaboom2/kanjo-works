@@ -6,7 +6,6 @@
     return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
   }
 
-  // Инициализация Scroll Reveal
   const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
   const observer = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
@@ -122,7 +121,6 @@
   async function loadCars() {
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     
-    // Скелетоны для машин
     grid.innerHTML = Array(4).fill(0).map(() => `
       <div class="skeleton-card-car">
         <div class="skeleton"></div>
@@ -171,7 +169,6 @@
   async function loadServices() {
     const grid = document.getElementById('services-grid'); if (!grid) return;
     
-    // Скелетоны для услуг
     grid.innerHTML = Array(3).fill(0).map(() => `
       <div class="skeleton-card-service">
         <div class="skeleton skeleton-line title"></div>
@@ -449,6 +446,8 @@
           <span class="status-badge status-${x.status==='В работе'?'work':(x.status==='Выполнена'?'done':(x.status==='Отменена'?'cancel':'new'))}">${escapeHTML(x.status)}</span>
           <small style="font-family: monospace; color: var(--grey);">${new Date(x.created_at).toLocaleString()}</small>
           ${x.status !== 'Отменена' && x.status !== 'Выполнена' ? `<button onclick="cancelUserBooking(${x.id})" style="background:none; border:none; color:var(--grey); font-size:12px; cursor:pointer; text-decoration:underline;">Отменить</button>` : ''}
+          ${x.status === 'Выполнена' && !x.is_paid ? `<button onclick="openPayment(${x.id}, '${escapeHTML(x.car)}', ${x.price || 0})" class="btn-racing" style="padding: 5px 10px; font-size: 14px; margin-top: 5px;">ОПЛАТИТЬ</button>` : ''}
+          ${x.is_paid ? `<span style="color: #10b981; font-size: 12px; font-weight: bold; margin-top: 5px;">✅ ОПЛАЧЕНО</span>` : ''}
         </div>
       </div>
     `).join('') : '<p>Нет заявок</p>';
@@ -731,6 +730,66 @@
       if (document.getElementById('profile-modal').classList.contains('open')) { 
         loadBookings(); loadBuilds(); loadUserReviews(); 
       }
+    }
+  });
+
+  // --- ЛОГИКА ОПЛАТЫ ---
+  const paymentModal = document.getElementById('payment-modal');
+  let currentPayId = null;
+
+  window.openPayment = (id, carName, amount) => {
+    currentPayId = id;
+    document.getElementById('pay-amount').textContent = amount > 0 ? amount.toLocaleString('ru-RU') : '0';
+    document.getElementById('pay-car').textContent = carName;
+    document.getElementById('payment-form').reset();
+    paymentModal.classList.add('open');
+    playSound('modal');
+  };
+
+  // Маска для карты
+  document.getElementById('card-number').addEventListener('input', (e) => {
+    let val = e.target.value.replace(/\D/g, '');
+    let formatted = val.match(/.{1,4}/g)?.join(' ') || '';
+    e.target.value = formatted;
+  });
+
+  document.getElementById('card-expiry').addEventListener('input', (e) => {
+    let val = e.target.value.replace(/\D/g, '');
+    if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
+    e.target.value = val;
+  });
+
+  document.getElementById('payment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btn-pay-submit');
+    btn.textContent = 'ОБРАБОТКА...';
+    
+    const card = document.getElementById('card-number').value;
+    const exp = document.getElementById('card-expiry').value;
+    const cvv = document.getElementById('card-cvv').value;
+    if (card.length < 19 || exp.length < 5 || cvv.length < 3) {
+      btn.textContent = 'ОПЛАТИТЬ';
+      return showToast('Проверьте данные карты', 'error');
+    }
+
+    try {
+      const res = await fetch(`/api/user/bookings/${currentPayId}/pay`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        paymentModal.classList.remove('open');
+        showToast('Оплата прошла успешно!', 'success');
+        loadBookings();
+      } else {
+        showToast(data.error, 'error');
+      }
+    } catch (err) {
+      showToast('Ошибка соединения с банком', 'error');
+    } finally {
+      btn.textContent = 'ОПЛАТИТЬ';
     }
   });
 
