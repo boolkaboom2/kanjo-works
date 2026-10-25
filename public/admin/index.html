@@ -27,7 +27,7 @@
     <section id="bookings" class="tab-content active">
       <h2>Входящие заявки</h2>
       <table class="admin-table">
-        <thead><tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Проект</th><th>Статус</th><th>Причина отмены</th><th>Дата</th><th>Действия</th></tr></thead>
+        <thead><tr><th>ID</th><th>Имя</th><th>Телефон</th><th>TG</th><th>Проект</th><th>Статус</th><th>Причина отмены</th><th>Дата</th><th>Действия</th></tr></thead>
         <tbody id="bookings-list"></tbody>
       </table>
     </section>
@@ -57,7 +57,7 @@
     <section id="clients" class="tab-content">
       <h2>Зарегистрированные клиенты</h2>
       <table class="admin-table">
-        <thead><tr><th>ID</th><th>Email</th><th>Имя</th><th>Телефон</th><th>Дата регистрации</th><th>Действия</th></tr></thead>
+        <thead><tr><th>ID</th><th>Email</th><th>Имя</th><th>Телефон</th><th>TG</th><th>Дата регистрации</th><th>Действия</th></tr></thead>
         <tbody id="clients-list"></tbody>
       </table>
     </section>
@@ -71,7 +71,6 @@
     </section>
   </main>
 
-  <!-- МОДАЛКА ЛОГИНА -->
   <div id="login-modal" class="modal open" style="display: flex; opacity: 1; pointer-events: auto;">
     <div class="modal-content" style="max-width: 400px;">
       <h3 style="font-size: 32px; text-align: center; margin-bottom: 30px;">ВХОД В АДМИНКУ</h3>
@@ -84,7 +83,6 @@
     </div>
   </div>
 
-  <!-- ОСТАЛЬНЫЕ МОДАЛКИ -->
   <div id="admin-confirm-modal" class="modal">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
       <h3 id="admin-confirm-text" style="font-size: 24px; margin-bottom: 20px; color: var(--red); font-family: var(--font-display);">Вы уверены?</h3>

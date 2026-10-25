@@ -44,14 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function initAdminUI() {
     if (localStorage.getItem('kanjo_admin_token')) {
       loginModal.style.display = 'none';
-      loginModal.classList.remove('open'); // ФИКС АВТООБНОВЛЕНИЯ
+      loginModal.classList.remove('open');
       adminTabs.style.display = 'flex';
       adminMain.style.display = 'block';
       btnLogout.style.display = 'block';
       loadData();
     } else {
       loginModal.style.display = 'flex';
-      loginModal.classList.add('open'); // ФИКС АВТООБНОВЛЕНИЯ
+      loginModal.classList.add('open');
       adminTabs.style.display = 'none';
       adminMain.style.display = 'none';
       btnLogout.style.display = 'none';
@@ -130,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${b.id}</td>
           <td>${escapeHTML(b.name)}</td>
           <td>${escapeHTML(b.phone)}</td>
+          <td>${b.telegram ? escapeHTML(b.telegram) : '-'}</td>
           <td>${escapeHTML(b.car)} ${b.price ? `<br><small style="color:var(--grey);">${b.price} ₽</small>` : ''}</td>
           <td>
             <select onchange="updateBookingStatus(${b.id}, this.value)" class="status-select status-${b.status.replace(/\s+/g, '_')}">
@@ -171,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${escapeHTML(c.email)}</td>
           <td>${escapeHTML(c.name) || '-'}</td>
           <td>${escapeHTML(c.phone) || '-'}</td>
+          <td>${c.telegram ? escapeHTML(c.telegram) : '-'}</td>
           <td>${new Date(c.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteClient(${c.id})">Удалить</span></td>
         </tr>

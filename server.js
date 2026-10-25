@@ -55,12 +55,14 @@ async function initDB() {
       id SERIAL PRIMARY KEY, email VARCHAR(255) UNIQUE NOT NULL, password_hash VARCHAR(255) NOT NULL, 
       name VARCHAR(255), phone VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram VARCHAR(255)`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_code VARCHAR(10)`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
       id SERIAL PRIMARY KEY, name VARCHAR(255), phone VARCHAR(50), car VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
+    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS telegram VARCHAR(255)`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новая'`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS price INTEGER`);
@@ -82,8 +84,6 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
-    
-        await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS telegram VARCHAR(255)`);
 
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
@@ -115,11 +115,9 @@ async function sendTelegramMessage(text, bookingId, phone = null, telegram = nul
       const buttons = [{ text: '✅ Выполнено', callback_data: `done_${bookingId}` }];
       
       if (telegram) {
-        // Если клиент указал ТГ, кнопка ведет на его профиль
         const cleanTg = telegram.replace('@', '').replace('https://t.me/', '').replace('t.me/', '');
         buttons.push({ text: '💬 Написать в TG', url: `https://t.me/${cleanTg}` });
       } else if (phone) {
-        // Если ТГ нет, кнопка на звонок
         buttons.push({ text: '📞 Позвонить', url: `tel:${phone.replace(/\D/g, '')}` });
       }
       
@@ -150,7 +148,7 @@ const adminAuthMiddleware = (req, res, next) => {
 };
 
 app.post('/api/auth/register', async (req, res) => {
-  const { email, password, name, phone } = req.body;
+  const { email, password, name, phone, telegram } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) return res.status(400).json({ error: 'Неверный формат email' });
   if (!password || password.length < 6) return res.status(400).json({ error: 'Пароль должен быть минимум 6 символов' });
@@ -163,12 +161,12 @@ app.post('/api/auth/register', async (req, res) => {
     if (check.rows.length > 0) {
       if (check.rows[0].is_verified) return res.status(400).json({ error: 'Этот email уже зарегистрирован. Попробуйте войти.' });
       else {
-        await pool.query(`UPDATE users SET password_hash = $1, name = $2, phone = $3, verification_code = $4 WHERE email = $5`, [hash, name, phone, code, email]);
+        await pool.query(`UPDATE users SET password_hash = $1, name = $2, phone = $3, telegram = $4, verification_code = $5 WHERE email = $6`, [hash, name, phone, telegram, code, email]);
         await sendEmail(email, 'Код подтверждения KANJO WORKS', `Ваш код: ${code}`);
         return res.status(201).json({ message: 'Новый код отправлен на почту', email, code: process.env.NODE_ENV === 'production' ? undefined : code });
       }
     }
-    await pool.query(`INSERT INTO users (email, password_hash, name, phone, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, FALSE)`, [email, hash, name, phone, code]);
+    await pool.query(`INSERT INTO users (email, password_hash, name, phone, telegram, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, $6, FALSE)`, [email, hash, name, phone, telegram, code]);
     await sendEmail(email, 'Код подтверждения KANJO WORKS', `Ваш код: ${code}`);
     res.status(201).json({ message: 'Код отправлен на почту', email, code: process.env.NODE_ENV === 'production' ? undefined : code });
   } catch (err) { if (!res.headersSent) res.status(500).json({ error: 'Ошибка сервера' }); }
@@ -182,7 +180,7 @@ app.post('/api/auth/verify', async (req, res) => {
     const user = result.rows[0];
     await pool.query(`UPDATE users SET is_verified = TRUE, verification_code = NULL WHERE id = $1`, [user.id]);
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone, telegram: user.telegram } });
   } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
@@ -196,7 +194,7 @@ app.post('/api/auth/login', async (req, res) => {
     if (!valid) return res.status(400).json({ error: 'Неверный пароль' });
     if (!user.is_verified) return res.status(403).json({ error: 'Аккаунт не подтвержден', needsVerify: true, email });
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, phone: user.phone, telegram: user.telegram } });
   } catch (err) { res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
@@ -215,7 +213,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
 app.get('/api/user/profile', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
-  const result = await pool.query('SELECT id, email, name, phone FROM users WHERE id = $1', [req.user.userId]);
+  const result = await pool.query('SELECT id, email, name, phone, telegram FROM users WHERE id = $1', [req.user.userId]);
   res.json(result.rows[0]);
 });
 
@@ -275,7 +273,6 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   }
 
   try {
-    // Добавили сохранение telegram в БД
     const result = await pool.query(
       `INSERT INTO bookings (name, phone, car, user_id, price, telegram) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, 
       [name, phone, car, userId, finalPrice, telegram]
@@ -283,7 +280,7 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     const bookingId = result.rows[0].id;
     res.status(201).json({ message: 'Заявка принята' });
     
-    const tgText = telegram ? `\n✈️ *TG:* ${telegram}` : '';
+    const tgText = telegram ? `\n✈️ *TG:* ${telegram}` : `\n✈️ *TG:* Не указан`;
     sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}${tgText}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone, telegram);
     
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -295,7 +292,6 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   res.json(r.rows);
 });
 
-// ИЗМЕНЕННЫЙ РОУТ ОТМЕНЫ
 app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   const { reason } = req.body;
@@ -355,7 +351,7 @@ app.get('/admin', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'a
 app.get('/api/admin/bookings', adminAuthMiddleware, async (req, res) => { const r = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(r.rows); });
 app.put('/api/admin/bookings/:id/status', adminAuthMiddleware, async (req, res) => { await pool.query(`UPDATE bookings SET status = $1 WHERE id = $2`, [req.body.status, req.params.id]); res.json({ message: 'OK' }); });
 app.delete('/api/admin/bookings/:id', adminAuthMiddleware, async (req, res) => { await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]); res.json({ message: 'Заявка удалена' }); });
-app.get('/api/admin/clients', adminAuthMiddleware, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
+app.get('/api/admin/clients', adminAuthMiddleware, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, telegram, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
 app.delete('/api/admin/clients/:id', adminAuthMiddleware, async (req, res) => {
   try {
     const clientId = req.params.id;

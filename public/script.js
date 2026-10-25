@@ -292,7 +292,11 @@
     const btn = document.getElementById('auth-submit-btn'); btn.textContent = 'ЗАГРУЗКА...';
     const email = document.getElementById('auth-email').value;
     const body = { email, password: document.getElementById('auth-password').value };
-    if (!isLogin) { body.name = document.getElementById('auth-name').value; body.phone = document.getElementById('auth-phone').value; }
+    if (!isLogin) { 
+      body.name = document.getElementById('auth-name').value; 
+      body.phone = document.getElementById('auth-phone').value; 
+      body.telegram = document.getElementById('auth-telegram').value;
+    }
 
     try {
       const res = await fetch(isLogin ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -497,22 +501,19 @@
     } catch (err) { showToast('Ошибка отправки', 'error'); }
   });
 
-    const handleForm = async (e) => {
+  const handleForm = async (e) => {
     e.preventDefault(); if (!validateForm(e.target)) return;
     const btn = e.target.querySelector('button'); const originalText = btn.textContent;
     const form = e.target;
-    const name = form.querySelector('input[type="text"]').value;
-    const phone = form.querySelector('input[type="tel"]').value;
-    // Берем второе поле type="text" (первое - имя, второе - машина, третье - тг)
-    const car = form.querySelectorAll('input[type="text"]')[1].value;
-    const tgInput = form.querySelector('.tg-input');
-    const telegram = tgInput ? tgInput.value.trim() : null;
+    const name = form.querySelector('.booking-name').value;
+    const phone = form.querySelector('.phone-input').value;
+    const car = form.querySelector('.booking-car').value;
+    const telegram = form.querySelector('.tg-input').value.trim();
     const price = form.querySelector('.booking-price-input') ? form.querySelector('.booking-price-input').value : null;
 
     btn.textContent = 'ОТПРАВКА...';
     try {
       const headers = { 'Content-Type': 'application/json' }; if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      // Добавили telegram в body
       const res = await fetch('/api/book', { method: 'POST', headers, body: JSON.stringify({ name, phone, car, price, telegram }) });
       
       const data = await res.json();
@@ -535,14 +536,15 @@
     const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
     const text = car + (parts.length ? ` + ${parts.join(' + ')}` : '') + ` (${document.getElementById('total-hp').textContent} HP)`;
     closeAllModals(); document.getElementById('booking-modal').classList.add('open');
-    const modal = document.getElementById('booking-form');
-    modal.querySelectorAll('input[type="text"]')[1].value = text;
-    modal.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
+    const form = document.getElementById('booking-form');
+    form.querySelector('.booking-car').value = text;
+    form.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
     
     if (currentUser) {
-      modal.querySelector('input[type="text"]').value = currentUser.name || '';
-      modal.querySelector('input[type="tel"]').value = currentUser.phone || '';
-      modal.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
+      form.querySelector('.booking-name').value = currentUser.name || '';
+      form.querySelector('.phone-input').value = currentUser.phone || '';
+      form.querySelector('.tg-input').value = currentUser.telegram || '';
+      form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
 
@@ -553,11 +555,12 @@
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
     
-    form.querySelectorAll('input[type="text"]')[1].value = carName;
+    form.querySelector('.booking-car').value = carName;
     
     if (currentUser) {
-      form.querySelector('input[type="text"]').value = currentUser.name || '';
-      form.querySelector('input[type="tel"]').value = currentUser.phone || '';
+      form.querySelector('.booking-name').value = currentUser.name || '';
+      form.querySelector('.phone-input').value = currentUser.phone || '';
+      form.querySelector('.tg-input').value = currentUser.telegram || '';
       form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
@@ -569,11 +572,12 @@
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
     
-    form.querySelectorAll('input[type="text"]')[1].value = srvName; 
+    form.querySelector('.booking-car').value = srvName; 
     
     if (currentUser) {
-      form.querySelector('input[type="text"]').value = currentUser.name || '';
-      form.querySelector('input[type="tel"]').value = currentUser.phone || '';
+      form.querySelector('.booking-name').value = currentUser.name || '';
+      form.querySelector('.phone-input').value = currentUser.phone || '';
+      form.querySelector('.tg-input').value = currentUser.telegram || '';
       form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });
@@ -601,7 +605,7 @@
   const progressBar = document.getElementById('progress-bar');
   const timeDisplay = document.getElementById('time-display');
   const muteBtn = document.getElementById('mute-btn');
-ф
+
   document.getElementById('credits-btn').addEventListener('click', () => {
     videoModal.classList.add('open'); video.currentTime = 0; video.play(); playPauseBtn.textContent = '⏸';
   });
