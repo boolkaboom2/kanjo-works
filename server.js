@@ -67,8 +67,6 @@ async function initDB() {
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новая'`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS price INTEGER`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason TEXT`);
-    
-    // НОВАЯ КОЛОНКА ДЛЯ ОПЛАТЫ
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS saved_builds (
@@ -294,10 +292,16 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     if (checkDup.rows.length > 0) return res.status(400).json({ error: 'У вас уже есть активная заявка на это.' });
   }
 
-  let finalPrice = parseInt(price) || null;
+  // УМНЫЙ ПАРСИНГ ЦЕНЫ (вытаскиваем цифры даже если пришел текст вроде "от 250 000 ₽")
+  let finalPrice = 0;
+  if (price) {
+    const digits = String(price).replace(/\D/g, ''); 
+    if (digits) finalPrice = parseInt(digits);
+  }
+
   let discountText = '';
   
-  if (userId && finalPrice) {
+  if (userId && finalPrice > 0) {
     const checkOrders = await pool.query('SELECT COUNT(*) FROM bookings WHERE user_id = $1', [userId]);
     if (parseInt(checkOrders.rows[0].count) === 0) {
       finalPrice = Math.round(finalPrice * 0.95);
@@ -343,13 +347,12 @@ app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// НОВЫЙ РОУТ ДЛЯ ЭМУЛЯЦИИ ОПЛАТЫ
+// РОУТ ОПЛАТЫ
 app.post('/api/user/bookings/:id/pay', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   
   try {
-    // Эмуляция задержки банка
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Эмуляция задержки банка
 
     const result = await pool.query(
       `UPDATE bookings SET is_paid = TRUE WHERE id = $1 AND user_id = $2 AND status = 'Выполнена' RETURNING car, price`, 
@@ -361,7 +364,7 @@ app.post('/api/user/bookings/:id/pay', authMiddleware, async (req, res) => {
     }
 
     const b = result.rows[0];
-    sendTelegramMessage(`💸 КЛИЕНТ ОПЛАТИЛ ЗАКАЗ 💸\n\n🚗 Проект: ${b.car}\n💰 Сумма: ${b.price || 'Не указана'} ₽`, null);
+    sendTelegramMessage(`💸 КЛИЕНТ ОПЛАТИЛ ЗАКАЗ 💸\n\n🚗 Проект: ${b.car}\n💰 Сумма: ${b.price || 'По договору'} ₽`, null);
     
     res.json({ message: 'Оплата прошла успешно!' });
   } catch (err) { res.status(500).json({ error: 'Ошибка платежного шлюза' }); }

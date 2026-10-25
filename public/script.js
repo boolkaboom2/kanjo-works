@@ -657,6 +657,10 @@
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
     form.querySelector('.booking-car').value = carName;
+    
+    // ДОБАВЛЯЕМ БАЗОВУЮ ЦЕНУ
+    form.querySelector('.booking-price-input').value = 1500000;
+
     if (currentUser) {
       form.querySelector('.booking-name').value = currentUser.name || '';
       form.querySelector('.phone-input').value = currentUser.phone || '';
@@ -667,11 +671,18 @@
 
   document.getElementById('btn-order-service').addEventListener('click', () => {
     const srvName = document.getElementById('srv-title').textContent;
+    const srvPriceStr = document.getElementById('srv-price').textContent; 
+    
     closeAllModals();
     const bookingModal = document.getElementById('booking-modal');
     bookingModal.classList.add('open'); playSound('modal');
     const form = document.getElementById('booking-form');
     form.querySelector('.booking-car').value = srvName; 
+    
+    // ВЫТАСКИВАЕМ ЦИФРЫ ИЗ СТРОКИ "от 250 000 ₽"
+    const cleanPrice = srvPriceStr.replace(/\D/g, ''); 
+    form.querySelector('.booking-price-input').value = cleanPrice;
+
     if (currentUser) {
       form.querySelector('.booking-name').value = currentUser.name || '';
       form.querySelector('.phone-input').value = currentUser.phone || '';
@@ -739,7 +750,7 @@
 
   window.openPayment = (id, carName, amount) => {
     currentPayId = id;
-    document.getElementById('pay-amount').textContent = amount > 0 ? amount.toLocaleString('ru-RU') : '0';
+    document.getElementById('pay-amount').textContent = amount > 0 ? amount.toLocaleString('ru-RU') : 'По договору';
     document.getElementById('pay-car').textContent = carName;
     document.getElementById('payment-form').reset();
     paymentModal.classList.add('open');
