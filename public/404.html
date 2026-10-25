@@ -4,21 +4,65 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>404 // KANJO WORKS</title>
-  <link rel="stylesheet" href="style.css">
+  <!-- Абсолютный путь к стилям -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230a0a0a%22/><text x=%2250%22 y=%2275%22 font-family=%22Arial%22 font-size=%2280%22 font-weight=%22bold%22 fill=%22%23ff0033%22 text-anchor=%22middle%22>K</text></svg>">
+  <link rel="stylesheet" href="/style.css">
   <style>
-    body { display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; overflow: hidden; }
-    .err-code { font-family: var(--font-display); font-size: 30vw; line-height: 0.8; color: var(--red); margin: 0; }
-    .err-text { font-family: var(--font-display); font-size: 32px; margin-bottom: 40px; }
-    .glitch { font-size: 30vw; }
+    /* Локальные стили только для 404 */
+    body { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      height: 100vh; 
+      text-align: center; 
+      overflow: hidden; 
+      margin: 0;
+    }
+    .err-code { 
+      font-family: var(--font-display); 
+      font-size: 25vw; 
+      line-height: 0.8; 
+      color: var(--red); 
+      margin: 0; 
+    }
+    .err-text { 
+      font-family: var(--font-display); 
+      font-size: 32px; 
+      margin-bottom: 20px; 
+      letter-spacing: 2px;
+    }
+    /* Анимация появления */
+    .fade-in { animation: fadeIn 0.8s ease-out forwards; opacity: 0; transform: translateY(20px); }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
   <div class="noise"></div>
-  <div class="hero-content reveal active">
+  
+  <div class="hero-content fade-in">
     <h1 class="err-code glitch" data-text="404">404</h1>
     <div class="err-text">TRACK NOT FOUND</div>
-    <p style="color: var(--grey); margin-bottom: 40px;">Похоже, ты свернул не туда. Этой страницы не существует.</p>
-    <a href="/" class="btn-racing">ВЕРНУТЬСЯ В БОКС</a>
+    <p style="color: var(--grey); margin-bottom: 40px; font-size: 16px;">Похоже, ты свернул не туда. Этой страницы не существует.</p>
+    <a href="/" class="btn-racing" style="text-decoration: none;">ВЕРНУТЬСЯ В БОКС</a>
   </div>
+
+  <!-- Звук при клике на кнопку -->
+  <script>
+    document.querySelector('a').addEventListener('click', () => {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(120, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start(); osc.stop(ctx.currentTime + 0.1);
+      }
+    });
+  </script>
 </body>
 </html>
