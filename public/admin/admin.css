@@ -44,8 +44,34 @@ h2 { font-family: var(--font-display); font-size: 32px; margin: 0 0 20px 0; font
 .action-link.delete:hover { color: var(--red); }
 .action-link:hover { text-decoration: underline; }
 
-.status-select { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px; border-radius: 4px; outline: none; font-family: var(--font-body); cursor: pointer; }
-.status-select:focus { border-color: var(--red); }
+/* КАСТОМНЫЙ СЕЛЕКТ ДЛЯ АДМИНКИ */
+.custom-select-admin { position: relative; width: 150px; user-select: none; }
+.select-trigger-admin { 
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); 
+  color: var(--text); cursor: pointer; font-size: 14px; font-family: var(--font-body); 
+  border-radius: 4px; transition: border-color 0.2s;
+}
+.custom-select-admin.open .select-trigger-admin { border-color: var(--red); }
+.select-trigger-admin .select-arrow { font-size: 10px; color: var(--grey); transition: transform 0.2s; }
+.custom-select-admin.open .select-arrow { transform: rotate(180deg); }
+
+.select-options-admin { 
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; 
+  background: #111; border: 1px solid var(--red); z-index: 100; 
+  display: none; flex-direction: column; border-radius: 4px; 
+  overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.8); 
+}
+.custom-select-admin.open .select-options-admin { display: flex; }
+.select-option-admin { padding: 8px 12px; font-size: 14px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid var(--border); }
+.select-option-admin:last-child { border-bottom: none; }
+.select-option-admin:hover { background: var(--red); color: #fff; }
+
+/* Цвета статусов */
+.status-new { color: #fff; }
+.status-work { color: #ffc107; }
+.status-done { color: #10b981; }
+.status-cancel { color: #ff0033; }
 
 .modal { position: fixed; inset: 0; background: rgba(10,10,10,0.9); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 1000; }
 .modal.open { opacity: 1; pointer-events: auto; }

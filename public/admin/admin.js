@@ -103,6 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Закрываем кастомный дропдаун при клике в любое место
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.custom-select-admin').forEach(s => s.classList.remove('open'));
+  });
+
   function showAdminConfirm(text, callback) {
     const modal = document.getElementById('admin-confirm-modal');
     document.getElementById('admin-confirm-text').textContent = text;
@@ -125,7 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/admin/bookings');
       if (!res.ok) return;
       const data = await res.json();
-      tbody.innerHTML = data.map(b => `
+      tbody.innerHTML = data.map(b => {
+        const statusClass = b.status === 'В работе' ? 'work' : (b.status === 'Выполнена' ? 'done' : (b.status === 'Отменена' ? 'cancel' : 'new'));
+        
+        return `
         <tr>
           <td>${b.id}</td>
           <td>${escapeHTML(b.name)}</td>
@@ -133,18 +141,51 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${b.telegram ? escapeHTML(b.telegram) : '-'}</td>
           <td>${escapeHTML(b.car)} ${b.price ? `<br><small style="color:var(--grey);">${b.price} ₽</small>` : ''}</td>
           <td>
-            <select onchange="updateBookingStatus(${b.id}, this.value)" class="status-select status-${b.status.replace(/\s+/g, '_')}">
-              <option value="Новая" ${b.status==='Новая'?'selected':''}>Новая</option>
-              <option value="В работе" ${b.status==='В работе'?'selected':''}>В работе</option>
-              <option value="Выполнена" ${b.status==='Выполнена'?'selected':''}>Выполнена</option>
-              <option value="Отменена" ${b.status==='Отменена'?'selected':''}>Отменена</option>
-            </select>
+            <!-- КАСТОМНЫЙ СЕЛЕКТ -->
+            <div class="custom-select-admin" data-id="${b.id}">
+              <div class="select-trigger-admin status-${statusClass}">
+                <span>${b.status}</span>
+                <span class="select-arrow">▼</span>
+              </div>
+              <div class="select-options-admin">
+                <div class="select-option-admin" data-val="Новая">Новая</div>
+                <div class="select-option-admin" data-val="В работе">В работе</div>
+                <div class="select-option-admin" data-val="Выполнена">Выполнена</div>
+                <div class="select-option-admin" data-val="Отменена">Отменена</div>
+              </div>
+            </div>
           </td>
           <td>${b.status === 'Отменена' && b.cancel_reason ? escapeHTML(b.cancel_reason) : '-'}</td>
           <td>${new Date(b.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteAdminBooking(${b.id})">УДАЛИТЬ</span></td>
         </tr>
-      `).join('');
+      `}).join('');
+
+      // Навешиваем обработчики на новые селекты
+      document.querySelectorAll('.custom-select-admin').forEach(select => {
+        const trigger = select.querySelector('.select-trigger-admin');
+        const options = select.querySelectorAll('.select-option-admin');
+        const id = select.dataset.id;
+
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation(); // Чтобы не сработал глобальный клик
+          // Закрываем все остальные открытые селекты
+          document.querySelectorAll('.custom-select-admin').forEach(s => {
+            if (s !== select) s.classList.remove('open');
+          });
+          select.classList.toggle('open');
+        });
+
+        options.forEach(opt => {
+          opt.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const newStatus = opt.dataset.val;
+            select.classList.remove('open');
+            updateBookingStatus(id, newStatus);
+          });
+        });
+      });
+
     } catch (err) { console.error(err); }
   }
   
@@ -159,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`/api/admin/bookings/${id}`, { method: 'DELETE' });
         if (!res.ok) {
           const data = await res.json();
-          alert('Ошибка: ' + (data.error || 'Не удалось удалить. Возможно, на эту заявку уже написан отзыв.'));
+          alert('Ошибка: ' + (data.error || 'Не удалось удалить.'));
         } else {
           loadBookings();
         }
@@ -402,7 +443,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setInterval(() => {
     if (!localStorage.getItem('kanjo_admin_token')) return;
-    if (document.querySelector('.modal.open')) return; 
+    // Если открыта модалка ИЛИ открыт кастомный селект — не обновляем таблицу
+    if (document.querySelector('.modal.open') || document.querySelector('.custom-select-admin.open')) return; 
+    
     const activeTab = document.querySelector('.tab-btn.active');
     if (!activeTab) return;
     const target = activeTab.dataset.target;
