@@ -17,7 +17,6 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const JWT_SECRET = process.env.JWT_SECRET || 'kanjo_super_secret_key_123';
 
-// Разрешаем запросы с твоего локального сервера и с Render
 const allowedOrigins = process.env.CLIENT_URL ? [process.env.CLIENT_URL, 'http://localhost:3000'] : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
@@ -30,7 +29,6 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
 
-// Nodemailer настроен на твои переменные EMAIL_USER и EMAIL_PASS
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: process.env.SMTP_PORT || 587,
@@ -273,11 +271,21 @@ app.get('/api/user/bookings', authMiddleware, async (req, res) => {
   res.json(r.rows);
 });
 
+// ИЗМЕНЕННЫЙ РОУТ ОТМЕНЫ
 app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   const { reason } = req.body;
   try {
-    await pool.query(`UPDATE bookings SET status = 'Отменена', cancel_reason = $1 WHERE id = $2 AND user_id = $3`, [reason || 'Не указана', req.params.id, req.user.userId]);
+    const result = await pool.query(
+      `UPDATE bookings SET status = 'Отменена', cancel_reason = $1 WHERE id = $2 AND user_id = $3 RETURNING name, phone, car`, 
+      [reason || 'Не указана', req.params.id, req.user.userId]
+    );
+    
+    if (result.rowCount > 0) {
+      const b = result.rows[0];
+      sendTelegramMessage(`❌ *КЛИЕНТ ОТМЕНИЛ ЗАЯВКУ* ❌\n\n👤 *Имя:* ${b.name}\n📞 *Тел:* ${b.phone}\n🚗 *Проект:* ${b.car}\n📝 *Причина:* ${reason || 'Не указана'}`, null);
+    }
+    
     res.json({ message: 'Заявка отменена' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -308,7 +316,6 @@ app.delete('/api/user/builds/:id', authMiddleware, async (req, res) => {
 // --- АДМИНКА (JWT) ---
 app.post('/api/admin/login', (req, res) => {
   const { login, password } = req.body;
-  // Используются переменные ADMIN_USER и ADMIN_PASS с Render
   const expectedLogin = process.env.ADMIN_USER || 'admin';
   const expectedPass = process.env.ADMIN_PASS || 'kanjo123';
 

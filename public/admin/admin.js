@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (response.status === 401 && resource.startsWith('/api/admin')) {
       localStorage.removeItem('kanjo_admin_token');
       loginModal.style.display = 'flex';
+      loginModal.classList.add('open');
       adminTabs.style.display = 'none';
       adminMain.style.display = 'none';
       btnLogout.style.display = 'none';
@@ -43,12 +44,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function initAdminUI() {
     if (localStorage.getItem('kanjo_admin_token')) {
       loginModal.style.display = 'none';
+      loginModal.classList.remove('open'); // ФИКС АВТООБНОВЛЕНИЯ
       adminTabs.style.display = 'flex';
       adminMain.style.display = 'block';
       btnLogout.style.display = 'block';
       loadData();
     } else {
       loginModal.style.display = 'flex';
+      loginModal.classList.add('open'); // ФИКС АВТООБНОВЛЕНИЯ
       adminTabs.style.display = 'none';
       adminMain.style.display = 'none';
       btnLogout.style.display = 'none';
