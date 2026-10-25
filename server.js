@@ -105,14 +105,26 @@ async function initDB() {
 }
 initDB();
 
-async function sendTelegramMessage(text, bookingId) {
+async function sendTelegramMessage(text, bookingId, phone = null) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
     const body = { chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'Markdown' };
     if (bookingId) {
-      body.reply_markup = { inline_keyboard: [[{ text: '✅ Выполнено', callback_data: `done_${bookingId}` }, { text: '💬 Написать', url: 'https://t.me/Bool2Dr' }]] };
+      const buttons = [{ text: '✅ Выполнено', callback_data: `done_${bookingId}` }];
+      
+      // Если передан номер, делаем кнопку "Написать" через Telegram
+      if (phone) {
+        const cleanPhone = phone.replace(/\D/g, ''); // оставляем только цифры
+        buttons.push({ text: '💬 Написать', url: `tg://resolve?phone=${cleanPhone}` });
+      }
+      
+      body.reply_markup = { inline_keyboard: [buttons] };
     }
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(body) 
+    });
   } catch (error) { console.error('[TELEGRAM ERROR]', error.message); }
 }
 
@@ -261,7 +273,10 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     const result = await pool.query(`INSERT INTO bookings (name, phone, car, user_id, price) VALUES ($1, $2, $3, $4, $5) RETURNING id`, [name, phone, car, userId, finalPrice]);
     const bookingId = result.rows[0].id;
     res.status(201).json({ message: 'Заявка принята' });
-    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId);
+    
+    // Передаем phone третьим аргументом
+    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone);
+    
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
