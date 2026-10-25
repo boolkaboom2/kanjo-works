@@ -67,6 +67,9 @@ async function initDB() {
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Новая'`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS price INTEGER`);
     await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_reason TEXT`);
+    
+    // НОВАЯ КОЛОНКА ДЛЯ ОПЛАТЫ
+    await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE`);
 
     await pool.query(`CREATE TABLE IF NOT EXISTS saved_builds (
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), car_name VARCHAR(255), build_text TEXT, total_hp INTEGER, total_price INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -84,7 +87,25 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
-        await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE`);
+
+    const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
+    if (parseInt(checkCars.rows[0].count) === 0) {
+      const initialCars = [
+        ['NISSAN SILVIA S15', 'SR20DET // 450HP', 'img/car1.jpg', 'SR20DET', '450 HP', '1240 kg', 'RWD', '4.5 sec', 'Классика дрифта.'],
+        ['TOYOTA SUPRA MK4', '2JZ-GTE // 800HP', 'img/car2.jpg', '2JZ-GTE', '800 HP', '1510 kg', 'RWD', '3.8 sec', 'Легенда.'],
+        ['MAZDA RX-7 FD3S', '13B-REW // 500HP', 'img/car3.jpg', '13B-REW', '500 HP', '1270 kg', 'RWD', '4.0 sec', 'Роторный.'],
+        ['HONDA NSX NA1', 'C30A // 350HP', 'img/car4.jpg', 'C30A', '350 HP', '1370 kg', 'RWD', '4.8 sec', 'Суперкар.'],
+        ['SUBARU IMPREZA 22B', 'EJ22 // 400HP', 'img/car5.jpg', 'EJ22', '400 HP', '1270 kg', 'AWD', '4.2 sec', 'Ралли.']
+      ];
+      for (let c of initialCars) await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, c);
+    }
+    
+    const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
+    if (parseInt(checkSrv.rows[0].count) === 0) {
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('01', 'ENGINE SWAP', 'Свап двигателей.', 'Свапы.', 'Снятие\nУстановка', 'от 250 000 ₽')`);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('02', 'AERO KIT', 'Обвесы.', 'Аэродинамика.', 'Разметка\nПокраска', 'от 120 000 ₽')`);
+      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('03', 'ECU TUNING', 'Прошивка.', 'Настройка.', 'Стенд\nТест', 'от 80 000 ₽')`);
+    }
   } catch (err) { console.error('DB Init Error:', err); }
 }
 initDB();
@@ -101,7 +122,6 @@ async function sendTelegramMessage(text, bookingId, phone = null, telegram = nul
         const cleanTg = telegram.replace('@', '').replace('https://t.me/', '').replace('t.me/', '');
         buttons.push({ text: '💬 Написать в TG', url: `https://t.me/${cleanTg}` });
       } 
-      // Кнопку tel: убрали, так как она ломает отправку
       
       body.reply_markup = { inline_keyboard: [buttons] };
     }
@@ -323,6 +343,30 @@ app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// НОВЫЙ РОУТ ДЛЯ ЭМУЛЯЦИИ ОПЛАТЫ
+app.post('/api/user/bookings/:id/pay', authMiddleware, async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
+  
+  try {
+    // Эмуляция задержки банка
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const result = await pool.query(
+      `UPDATE bookings SET is_paid = TRUE WHERE id = $1 AND user_id = $2 AND status = 'Выполнена' RETURNING car, price`, 
+      [req.params.id, req.user.userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(400).json({ error: 'Оплата невозможна. Заявка не выполнена или не найдена.' });
+    }
+
+    const b = result.rows[0];
+    sendTelegramMessage(`💸 КЛИЕНТ ОПЛАТИЛ ЗАКАЗ 💸\n\n🚗 Проект: ${b.car}\n💰 Сумма: ${b.price || 'Не указана'} ₽`, null);
+    
+    res.json({ message: 'Оплата прошла успешно!' });
+  } catch (err) { res.status(500).json({ error: 'Ошибка платежного шлюза' }); }
+});
+
 app.post('/api/user/save-build', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   const { car_name, build_text, total_hp, total_price } = req.body;
@@ -366,7 +410,6 @@ app.put('/api/admin/bookings/:id/status', adminAuthMiddleware, async (req, res) 
 
 app.delete('/api/admin/bookings/:id', adminAuthMiddleware, async (req, res) => { 
   try {
-    // Сначала удаляем отзыв, привязанный к заявке, чтобы не сработал Foreign Key
     await pool.query(`DELETE FROM reviews WHERE booking_id = $1`, [req.params.id]);
     await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]); 
     res.json({ message: 'Заявка удалена' }); 
@@ -378,7 +421,6 @@ app.get('/api/admin/clients', adminAuthMiddleware, async (req, res) => { const r
 app.delete('/api/admin/clients/:id', adminAuthMiddleware, async (req, res) => {
   try {
     const clientId = req.params.id;
-    // Удаляем отзывы, привязанные к заявкам этого клиента
     await pool.query('DELETE FROM reviews WHERE booking_id IN (SELECT id FROM bookings WHERE user_id = $1)', [clientId]);
     await pool.query('DELETE FROM bookings WHERE user_id = $1', [clientId]);
     await pool.query('DELETE FROM saved_builds WHERE user_id = $1', [clientId]);
@@ -433,29 +475,6 @@ app.post('/api/telegram-webhook', async (req, res) => {
 // 404 Handler
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
-});
-
-app.post('/api/user/bookings/:id/pay', authMiddleware, async (req, res) => {
-  if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
-  
-  try {
-    // Эмуляция задержки банка
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const result = await pool.query(
-      `UPDATE bookings SET is_paid = TRUE WHERE id = $1 AND user_id = $2 AND status = 'Выполнена' RETURNING car, price`, 
-      [req.params.id, req.user.userId]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(400).json({ error: 'Оплата невозможна. Заявка не выполнена или не найдена.' });
-    }
-
-    const b = result.rows[0];
-    sendTelegramMessage(`💸 *КЛИЕНТ ОПЛАТИЛ ЗАКАЗ* 💸\n\n🚗 *Проект:* ${b.car}\n💰 *Сумма:* ${b.price || 'Не указана'} ₽`, null);
-    
-    res.json({ message: 'Оплата прошла успешно!' });
-  } catch (err) { res.status(500).json({ error: 'Ошибка платежного шлюза' }); }
 });
 
 app.listen(PORT, () => console.log(`[SERVER] Запущен на порту ${PORT}`));
