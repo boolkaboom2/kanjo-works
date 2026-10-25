@@ -497,19 +497,23 @@
     } catch (err) { showToast('Ошибка отправки', 'error'); }
   });
 
-  const handleForm = async (e) => {
+    const handleForm = async (e) => {
     e.preventDefault(); if (!validateForm(e.target)) return;
     const btn = e.target.querySelector('button'); const originalText = btn.textContent;
     const form = e.target;
     const name = form.querySelector('input[type="text"]').value;
     const phone = form.querySelector('input[type="tel"]').value;
+    // Берем второе поле type="text" (первое - имя, второе - машина, третье - тг)
     const car = form.querySelectorAll('input[type="text"]')[1].value;
+    const tgInput = form.querySelector('.tg-input');
+    const telegram = tgInput ? tgInput.value.trim() : null;
     const price = form.querySelector('.booking-price-input') ? form.querySelector('.booking-price-input').value : null;
 
     btn.textContent = 'ОТПРАВКА...';
     try {
       const headers = { 'Content-Type': 'application/json' }; if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-      const res = await fetch('/api/book', { method: 'POST', headers, body: JSON.stringify({ name, phone, car, price }) });
+      // Добавили telegram в body
+      const res = await fetch('/api/book', { method: 'POST', headers, body: JSON.stringify({ name, phone, car, price, telegram }) });
       
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Ошибка отправки');
@@ -597,7 +601,7 @@
   const progressBar = document.getElementById('progress-bar');
   const timeDisplay = document.getElementById('time-display');
   const muteBtn = document.getElementById('mute-btn');
-
+ф
   document.getElementById('credits-btn').addEventListener('click', () => {
     videoModal.classList.add('open'); video.currentTime = 0; video.play(); playPauseBtn.textContent = '⏸';
   });

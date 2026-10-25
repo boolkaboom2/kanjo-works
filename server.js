@@ -82,6 +82,8 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
+    
+        await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS telegram VARCHAR(255)`);
 
     const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
     if (parseInt(checkCars.rows[0].count) === 0) {
@@ -105,17 +107,20 @@ async function initDB() {
 }
 initDB();
 
-async function sendTelegramMessage(text, bookingId, phone = null) {
+async function sendTelegramMessage(text, bookingId, phone = null, telegram = null) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
     const body = { chat_id: TELEGRAM_CHAT_ID, text: text, parse_mode: 'Markdown' };
     if (bookingId) {
       const buttons = [{ text: '✅ Выполнено', callback_data: `done_${bookingId}` }];
       
-      // Если передан номер, делаем кнопку "Написать" через Telegram
-      if (phone) {
-        const cleanPhone = phone.replace(/\D/g, ''); // оставляем только цифры
-        buttons.push({ text: '💬 Написать', url: `tg://resolve?phone=${cleanPhone}` });
+      if (telegram) {
+        // Если клиент указал ТГ, кнопка ведет на его профиль
+        const cleanTg = telegram.replace('@', '').replace('https://t.me/', '').replace('t.me/', '');
+        buttons.push({ text: '💬 Написать в TG', url: `https://t.me/${cleanTg}` });
+      } else if (phone) {
+        // Если ТГ нет, кнопка на звонок
+        buttons.push({ text: '📞 Позвонить', url: `tel:${phone.replace(/\D/g, '')}` });
       }
       
       body.reply_markup = { inline_keyboard: [buttons] };
@@ -249,7 +254,7 @@ const limiter = rateLimit({
 });
 
 app.post('/api/book', limiter, authMiddleware, async (req, res) => {
-  let { name, phone, car, price } = req.body;
+  let { name, phone, car, price, telegram } = req.body;
   if (!name || !phone || !car) return res.status(400).json({ error: 'Заполните все поля' });
   const userId = req.user ? req.user.userId : null;
   
@@ -270,12 +275,16 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`INSERT INTO bookings (name, phone, car, user_id, price) VALUES ($1, $2, $3, $4, $5) RETURNING id`, [name, phone, car, userId, finalPrice]);
+    // Добавили сохранение telegram в БД
+    const result = await pool.query(
+      `INSERT INTO bookings (name, phone, car, user_id, price, telegram) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`, 
+      [name, phone, car, userId, finalPrice, telegram]
+    );
     const bookingId = result.rows[0].id;
     res.status(201).json({ message: 'Заявка принята' });
     
-    // Передаем phone третьим аргументом
-    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone);
+    const tgText = telegram ? `\n✈️ *TG:* ${telegram}` : '';
+    sendTelegramMessage(`🚨 *НОВАЯ ЗАЯВКА* 🚨\n\n👤 *Имя:* ${name}\n📞 *Тел:* ${phone}${tgText}\n🚗 *Проект:* ${car}${finalPrice ? `\n💰 *Цена:* ${finalPrice} ₽` : ''}${discountText}`, bookingId, phone, telegram);
     
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
