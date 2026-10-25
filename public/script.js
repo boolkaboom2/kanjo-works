@@ -121,19 +121,26 @@
   async function loadCars() {
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     
-    grid.innerHTML = Array(4).fill(0).map(() => `
-      <div class="skeleton-card-car">
-        <div class="skeleton"></div>
-      </div>
-    `).join('');
+    const cachedCars = sessionStorage.getItem('kanjo_cars');
+    if (cachedCars) {
+      carsData = JSON.parse(cachedCars);
+      renderCars(carsData);
+      return;
+    }
 
-    const res = await fetch('/api/cars'); carsData = await res.json();
-    
-    grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item reveal reveal-delay-${(i % 3) + 1}" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
-    
+    grid.innerHTML = Array(4).fill(0).map(() => `<div class="skeleton-card-car"><div class="skeleton"></div></div>`).join('');
+    const res = await fetch('/api/cars'); 
+    carsData = await res.json();
+    sessionStorage.setItem('kanjo_cars', JSON.stringify(carsData));
+    renderCars(carsData);
+  }
+
+  function renderCars(data) {
+    const grid = document.getElementById('gallery-grid');
+    grid.innerHTML = data.map((c, i) => `<div class="gallery-item reveal reveal-delay-${(i % 3) + 1}" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
-        const car = carsData[item.dataset.index]; playSound('click'); 
+        const car = data[item.dataset.index]; playSound('click'); 
         document.getElementById('cm-img').src = escapeHTML(car.img); document.getElementById('cm-title').textContent = escapeHTML(car.title); document.getElementById('cm-spec').textContent = escapeHTML(car.spec);
         document.getElementById('cm-engine').textContent = escapeHTML(car.engine); document.getElementById('cm-hp').textContent = escapeHTML(car.hp); document.getElementById('cm-weight').textContent = escapeHTML(car.weight);
         document.getElementById('cm-drive').textContent = escapeHTML(car.drive); document.getElementById('cm-accel').textContent = escapeHTML(car.accel); document.getElementById('cm-desc').textContent = escapeHTML(car.description);
@@ -141,8 +148,8 @@
       });
     });
 
-    if (optionsContainer && carsData.length > 0) {
-      optionsContainer.innerHTML = carsData.map(c => `<div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${escapeHTML(c.title)}</div>`).join('');
+    if (optionsContainer && data.length > 0) {
+      optionsContainer.innerHTML = data.map(c => `<div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${escapeHTML(c.title)}</div>`).join('');
       optionsContainer.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
       document.querySelectorAll('.select-option').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -169,21 +176,26 @@
   async function loadServices() {
     const grid = document.getElementById('services-grid'); if (!grid) return;
     
-    grid.innerHTML = Array(3).fill(0).map(() => `
-      <div class="skeleton-card-service">
-        <div class="skeleton skeleton-line title"></div>
-        <div class="skeleton skeleton-line text"></div>
-        <div class="skeleton skeleton-line text" style="width: 70%;"></div>
-      </div>
-    `).join('');
+    const cachedServices = sessionStorage.getItem('kanjo_services');
+    if (cachedServices) {
+      servicesData = JSON.parse(cachedServices);
+      renderServices(servicesData);
+      return;
+    }
 
-    const res = await fetch('/api/services'); servicesData = await res.json();
-    
-    grid.innerHTML = servicesData.map((s, i) => `<div class="service-card reveal reveal-delay-${(i % 3) + 1}" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
-    
+    grid.innerHTML = Array(3).fill(0).map(() => `<div class="skeleton-card-service"><div class="skeleton skeleton-line title"></div><div class="skeleton skeleton-line text"></div><div class="skeleton skeleton-line text" style="width: 70%;"></div></div>`).join('');
+    const res = await fetch('/api/services'); 
+    servicesData = await res.json();
+    sessionStorage.setItem('kanjo_services', JSON.stringify(servicesData));
+    renderServices(servicesData);
+  }
+
+  function renderServices(data) {
+    const grid = document.getElementById('services-grid');
+    grid.innerHTML = data.map((s, i) => `<div class="service-card reveal reveal-delay-${(i % 3) + 1}" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
     document.querySelectorAll('.service-card').forEach(card => {
       card.addEventListener('click', () => {
-        const srv = servicesData.find(s => s.id === parseInt(card.dataset.id));
+        const srv = data.find(s => s.id === parseInt(card.dataset.id));
         document.getElementById('srv-title').textContent = escapeHTML(srv.title); document.getElementById('srv-desc').textContent = escapeHTML(srv.full_description); document.getElementById('srv-price').textContent = escapeHTML(srv.price);
         document.getElementById('srv-list').innerHTML = srv.works.split('\n').map(w => `<li>${escapeHTML(w)}</li>`).join('');
         closeAllModals(); document.getElementById('service-modal').classList.add('open'); playSound('modal');
@@ -740,15 +752,6 @@
   video.addEventListener('timeupdate', () => { const percent = (video.currentTime / video.duration) * 100; progressBar.style.width = `${percent}%`; timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`; });
   progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
 
-  window.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && authToken) {
-      loadProfile();
-      if (document.getElementById('profile-modal').classList.contains('open')) { 
-        loadBookings(); loadBuilds(); loadUserReviews(); 
-      }
-    }
-  });
-
   const paymentModal = document.getElementById('payment-modal');
   let currentPayId = null;
 
@@ -806,5 +809,25 @@
       btn.textContent = 'ОПЛАТИТЬ';
     }
   });
+
+  // --- АВТООБНОВЛЕНИЕ ДЛЯ КЛИЕНТА (КАЖДЫЕ 5 СЕКУНД) ---
+  setInterval(() => {
+    if (!authToken) return;
+    const profileModal = document.getElementById('profile-modal');
+    
+    // Проверяем, открыто ли вообще окно личного кабинета
+    if (profileModal.classList.contains('open')) {
+      const activeTab = document.querySelector('.auth-tabs .auth-tab.active');
+      if (activeTab) {
+        if (activeTab.id === 'tab-btn-bookings') {
+          // Тихо обновляем заявки, не меняя вкладку
+          loadBookings(); 
+        }
+        if (activeTab.id === 'tab-btn-reviews') {
+          loadUserReviews();
+        }
+      }
+    }
+  }, 5000); // 5000 мс = 5 секунд
 
 })();

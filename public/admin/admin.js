@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Закрываем кастомный дропдаун при клике в любое место
   document.addEventListener('click', () => {
     document.querySelectorAll('.custom-select-admin').forEach(s => s.classList.remove('open'));
   });
@@ -141,7 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <td>${b.telegram ? escapeHTML(b.telegram) : '-'}</td>
           <td>${escapeHTML(b.car)} ${b.price ? `<br><small style="color:var(--grey);">${b.price} ₽</small>` : ''}</td>
           <td>
-            <!-- КАСТОМНЫЙ СЕЛЕКТ -->
             <div class="custom-select-admin" data-id="${b.id}">
               <div class="select-trigger-admin status-${statusClass}">
                 <span>${b.status}</span>
@@ -161,15 +159,13 @@ document.addEventListener('DOMContentLoaded', () => {
         </tr>
       `}).join('');
 
-      // Навешиваем обработчики на новые селекты
       document.querySelectorAll('.custom-select-admin').forEach(select => {
         const trigger = select.querySelector('.select-trigger-admin');
         const options = select.querySelectorAll('.select-option-admin');
         const id = select.dataset.id;
 
         trigger.addEventListener('click', (e) => {
-          e.stopPropagation(); // Чтобы не сработал глобальный клик
-          // Закрываем все остальные открытые селекты
+          e.stopPropagation();
           document.querySelectorAll('.custom-select-admin').forEach(s => {
             if (s !== select) s.classList.remove('open');
           });
@@ -443,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setInterval(() => {
     if (!localStorage.getItem('kanjo_admin_token')) return;
-    // Если открыта модалка ИЛИ открыт кастомный селект — не обновляем таблицу
     if (document.querySelector('.modal.open') || document.querySelector('.custom-select-admin.open')) return; 
     
     const activeTab = document.querySelector('.tab-btn.active');
@@ -454,5 +449,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (target === 'services') loadServices();
     if (target === 'clients') loadClients();
     if (target === 'reviews') loadReviews();
-  }, 5000);
+  }, 5000); // 5000 мс = 5 секунд
 });
