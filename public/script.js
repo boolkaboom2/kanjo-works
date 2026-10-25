@@ -6,9 +6,28 @@
     return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
   }
 
+  // Инициализация Scroll Reveal
+  const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+  const observer = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  function initReveal() {
+    document.querySelectorAll('.reveal:not(.active)').forEach(el => observer.observe(el));
+  }
+
   window.addEventListener('load', async () => {
     try { await fetch('/api/cars', { method: 'HEAD', cache: 'no-store' }).catch(() => {}); } 
-    finally { const p = document.getElementById('preloader'); if (p) setTimeout(() => p.classList.add('hidden'), 800); }
+    finally { 
+      const p = document.getElementById('preloader'); 
+      if (p) setTimeout(() => p.classList.add('hidden'), 800); 
+      initReveal(); // Запускаем анимацию для статичных элементов
+    }
   });
 
   const container = document.getElementById('scroll-container');
@@ -103,7 +122,10 @@
   async function loadCars() {
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     const res = await fetch('/api/cars'); carsData = await res.json();
-    grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
+    
+    // Добавляем класс reveal и задержку
+    grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item reveal reveal-delay-${(i % 3) + 1}" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
+    
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
         const car = carsData[item.dataset.index]; playSound('click'); 
@@ -113,6 +135,7 @@
         closeAllModals(); document.getElementById('car-modal').classList.add('open');
       });
     });
+
     if (optionsContainer && carsData.length > 0) {
       optionsContainer.innerHTML = carsData.map(c => `<div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${escapeHTML(c.title)}</div>`).join('');
       optionsContainer.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
@@ -130,6 +153,7 @@
         calculateConfig();
       }
     }
+    initReveal(); // Запускаем анимацию для динамических карточек
   }
 
   if (selectTrigger) {
@@ -140,7 +164,9 @@
   async function loadServices() {
     const grid = document.getElementById('services-grid'); if (!grid) return;
     const res = await fetch('/api/services'); servicesData = await res.json();
-    grid.innerHTML = servicesData.map(s => `<div class="service-card" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
+    // Добавляем класс reveal и задержку
+    grid.innerHTML = servicesData.map((s, i) => `<div class="service-card reveal reveal-delay-${(i % 3) + 1}" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
+    
     document.querySelectorAll('.service-card').forEach(card => {
       card.addEventListener('click', () => {
         const srv = servicesData.find(s => s.id === parseInt(card.dataset.id));
@@ -149,6 +175,7 @@
         closeAllModals(); document.getElementById('service-modal').classList.add('open'); playSound('modal');
       });
     });
+    initReveal();
   }
   loadCars(); loadServices();
 
@@ -329,8 +356,6 @@
       const res = await fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${authToken}` } });
       if (res.ok) { 
         currentUser = await res.json(); 
-        
-        // Заполняем форму профиля
         document.getElementById('edit-name').value = currentUser.name || '';
         document.getElementById('edit-phone').value = currentUser.phone || '';
         document.getElementById('edit-email').value = currentUser.email || '';
@@ -349,7 +374,6 @@
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); loadUserReviews(); });
 
-  // --- ВКЛАДКИ ПРОФИЛЯ ---
   const tabsList = document.querySelectorAll('.auth-tabs .auth-tab');
   tabsList.forEach(tab => {
     tab.addEventListener('click', (e) => {
@@ -370,7 +394,6 @@
     });
   });
 
-  // --- СОХРАНЕНИЕ ПРОФИЛЯ ---
   document.getElementById('profile-edit-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const msg = document.getElementById('profile-msg');
@@ -390,7 +413,7 @@
       if (res.ok) {
         msg.style.display = 'block';
         setTimeout(() => msg.style.display = 'none', 3000);
-        currentUser = data.user; // Обновляем локальные данные
+        currentUser = data.user;
         document.getElementById('edit-password').value = '';
         showToast('Профиль обновлен', 'success');
       } else { showToast(data.error, 'error'); }
@@ -452,10 +475,9 @@
   });
   stars.forEach(s => { if (parseInt(s.dataset.val) <= currentRating) s.style.color = 'var(--red)'; });
 
-    async function loadUserReviews() {
+  async function loadUserReviews() {
     const list = document.getElementById('profile-reviews-list'); 
     const formContainer = document.getElementById('review-form-container');
-    
     const selectTrigger = document.getElementById('review-select-trigger');
     const selectOptions = document.getElementById('review-select-options');
     const selectedText = document.getElementById('review-selected-text');
@@ -476,15 +498,10 @@
 
     if (unreviewedBookings.length > 0) {
       formContainer.style.display = 'block';
-      
-      // Заполняем кастомный селект
       selectOptions.innerHTML = unreviewedBookings.map(b => `<div class="select-option" data-val="${b.id}">${escapeHTML(b.car)}</div>`).join('');
-      
-      // Устанавливаем первое значение по умолчанию
       selectedText.textContent = unreviewedBookings[0].car;
       hiddenInput.value = unreviewedBookings[0].id;
 
-      // Обработчик клика по опциям
       document.querySelectorAll('#review-select-options .select-option').forEach(opt => {
         opt.addEventListener('click', () => {
           selectedText.textContent = opt.textContent;
@@ -493,7 +510,6 @@
         });
       });
 
-      // Обработчик открытия/закрытия
       if (!selectTrigger.hasAttribute('data-listener')) {
         selectTrigger.setAttribute('data-listener', 'true');
         selectTrigger.addEventListener('click', (e) => {
@@ -520,9 +536,9 @@
     `).join('') : '<p>Вы пока не оставляли отзывов.</p>';
   }
 
-   document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
+  document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
     const text = document.getElementById('review-text').value;
-    const bookingId = document.getElementById('review-booking-id').value; // Берем из hidden input
+    const bookingId = document.getElementById('review-booking-id').value;
 
     if (!text) return showToast('Напишите текст отзыва', 'error');
     if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');
@@ -552,12 +568,10 @@
     const phone = form.querySelector('.phone-input').value;
     const car = form.querySelector('.booking-car').value;
     
-    // Логика TG
     const tgInput = form.querySelector('.tg-input');
     const tgToggle = form.querySelector('.tg-toggle');
     let telegram = tgInput ? tgInput.value.trim() : null;
     
-    // Если тумблер есть и он выключен, значит клиент скрывает TG
     if (tgToggle && !tgToggle.checked) {
       telegram = null; 
     }
@@ -583,7 +597,6 @@
   document.getElementById('booking-form').addEventListener('submit', handleForm);
   document.getElementById('inline-booking-form').addEventListener('submit', handleForm);
 
-  // Вспомогательная функция для настройки TG инпута в формах
   function setupTgField(form) {
     if (!currentUser) return;
     const tgInput = form.querySelector('.tg-input');
@@ -592,10 +605,10 @@
 
     if (currentUser.telegram) {
       tgInput.value = currentUser.telegram;
-      tgInput.readOnly = true; // Клиент не может стереть
+      tgInput.readOnly = true;
       tgInput.style.opacity = '0.7';
       tgToggleWrap.style.display = 'block';
-      tgToggle.checked = true; // По умолчанию "Да"
+      tgToggle.checked = true;
     } else {
       tgInput.value = '';
       tgInput.readOnly = false;
@@ -616,7 +629,7 @@
     if (currentUser) {
       form.querySelector('.booking-name').value = currentUser.name || '';
       form.querySelector('.phone-input').value = currentUser.phone || '';
-      setupTgField(form); // Настраиваем TG
+      setupTgField(form);
       form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
     }
   });

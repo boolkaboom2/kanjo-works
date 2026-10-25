@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KANJO WORKS | JDM Tuning</title>
-  <!-- ИКОНКА (SVG) -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%230a0a0a%22/><text x=%2250%22 y=%2275%22 font-family=%22Arial%22 font-size=%2280%22 font-weight=%22bold%22 fill=%22%23ff0033%22 text-anchor=%22middle%22>K</text></svg>">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -27,18 +26,29 @@
 
   <main id="scroll-container">
     <section class="panel hero">
-      <div class="hero-content"><h1 class="glitch" data-text="SPEED">SPEED</h1><h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1><p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p><div class="scroll-hint"><span>SCROLL TO EXPLORE</span><span class="arrow">→</span></div></div>
+      <div class="hero-content reveal">
+        <h1 class="glitch" data-text="SPEED">SPEED</h1>
+        <h1 class="glitch outline" data-text="&amp; CONTROL">&amp; CONTROL</h1>
+        <p>Мы не просто тюнингуем машины. Мы создаем оружие для ночных трасс Токио.</p>
+        <div class="scroll-hint"><span>SCROLL TO EXPLORE</span><span class="arrow">→</span></div>
+      </div>
       <div class="hero-bg"><img src="img/hero.jpg" alt="JDM Garage"></div>
     </section>
     
-    <section class="panel services"><div class="panel-title"><h2>OUR <br> SERVICES</h2><span class="kanji">サービス</span></div><div class="services-grid" id="services-grid"></div></section>
+    <section class="panel services">
+      <div class="panel-title reveal"><h2>OUR <br> SERVICES</h2><span class="kanji">サービス</span></div>
+      <div class="services-grid" id="services-grid"></div>
+    </section>
     
-    <section class="panel gallery"><div class="panel-title"><h2>THE <br> GARAGE</h2><span class="kanji">ガレージ</span></div><div class="gallery-grid" id="gallery-grid"></div></section>
+    <section class="panel gallery">
+      <div class="panel-title reveal"><h2>THE <br> GARAGE</h2><span class="kanji">ガレージ</span></div>
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </section>
 
     <section class="panel configurator">
-      <div class="panel-title"><h2>BUILD YOUR <br> LEGEND</h2><span class="kanji">チューニング</span></div>
+      <div class="panel-title reveal"><h2>BUILD YOUR <br> LEGEND</h2><span class="kanji">チューニング</span></div>
       <div class="config-layout">
-        <div class="config-controls">
+        <div class="config-controls reveal">
           <div class="config-group">
             <label>ВЫБЕРИ БАЗУ</label>
             <div class="custom-select" id="base-car-select">
@@ -55,7 +65,7 @@
             <div class="part-row"><input type="checkbox" id="part-exhaust" data-hp="25" data-price="80000"><label for="part-exhaust">TITANIUM EXHAUST (+25 HP)</label></div>
           </div>
         </div>
-        <div class="config-result">
+        <div class="config-result reveal reveal-delay-2">
           <div class="result-box"><span class="result-label">ИТОГОВАЯ МОЩНОСТЬ</span><div class="result-hp"><span id="total-hp">250</span> <small>HP</small></div></div>
           <div class="result-box"><span class="result-label">СТОИМОСТЬ ПРОЕКТА</span><div class="result-price">от <span id="total-price">1 500 000</span> ₽</div></div>
           <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -67,7 +77,7 @@
     </section>
 
     <section class="panel reviews-section">
-      <div class="panel-title">
+      <div class="panel-title reveal">
         <h2>CLIENT <br> REVIEWS</h2>
         <span class="kanji">レビュー</span>
       </div>
@@ -77,7 +87,7 @@
     <section class="panel contact">
       <div class="contact-bg-text">KANJO</div>
       <div class="contact-layout">
-        <div class="contact-info">
+        <div class="contact-info reveal">
           <h2>READY <br>TO RACE?</h2>
           <p>Запишись на консультацию в наш бокс. Мы находимся в промзоне Токио, найти нас легко по звуку выхлопа.</p>
           <div class="info-row">
@@ -96,7 +106,7 @@
             <a href="https://discord.gg/mJKUpuTP9y" target="_blank" rel="noopener">DISCORD</a>
           </div>
         </div>
-        <div class="contact-form-wrap">
+        <div class="contact-form-wrap reveal reveal-delay-2">
           <h3>BOOK A SLOT</h3>
           <form id="inline-booking-form" novalidate>
             <div class="input-group"><input type="text" class="booking-name" placeholder="YOUR NAME" required><span class="error-msg"></span></div>
@@ -252,7 +262,6 @@
           <div class="input-group" style="margin-bottom: 20px; position: relative; z-index: 50;">
             <label style="color:var(--grey); font-size:12px; margin-bottom:5px; display:block;">Выберите выполненную работу:</label>
             
-            <!-- КАСТОМНЫЙ СЕЛЕКТ ДЛЯ ОТЗЫВОВ -->
             <div class="custom-select" id="review-select-container">
               <div class="select-trigger" id="review-select-trigger">
                 <span id="review-selected-text">Нет работ</span>
@@ -261,7 +270,6 @@
               <div class="select-options" id="review-select-options"></div>
             </div>
             <input type="hidden" id="review-booking-id">
-            
           </div>
 
           <textarea id="review-text" placeholder="Ваш отзыв..." style="width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px; font-family: var(--font-body); margin-bottom: 10px; resize: none;" rows="3"></textarea>
