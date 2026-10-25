@@ -330,9 +330,16 @@
         updateAuthUI(); authModal.classList.remove('open'); e.target.reset();
         showToast('Успешный вход в систему!', 'success'); loadProfile();
       } else {
-        tempEmail = email; document.getElementById('auth-step-1').style.display = 'none';
+        tempEmail = email; 
+        document.getElementById('auth-step-1').style.display = 'none';
         document.getElementById('auth-step-2').style.display = 'block';
-        showToast(`Ваш код: ${data.code}`, 'success'); document.getElementById('auth-code').value = data.code;
+        
+        if (data.code) {
+          showToast(`Ваш код: ${data.code}`, 'success'); 
+          document.getElementById('auth-code').value = data.code;
+        } else {
+          showToast('Код отправлен на почту', 'success');
+        }
       }
     } catch (err) { document.getElementById('auth-error').textContent = err.message; document.getElementById('auth-error').style.display = 'block'; } 
     finally { btn.textContent = isLogin ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'; }
@@ -658,7 +665,6 @@
     const form = document.getElementById('booking-form');
     form.querySelector('.booking-car').value = carName;
     
-    // ДОБАВЛЯЕМ БАЗОВУЮ ЦЕНУ
     form.querySelector('.booking-price-input').value = 1500000;
 
     if (currentUser) {
@@ -679,7 +685,6 @@
     const form = document.getElementById('booking-form');
     form.querySelector('.booking-car').value = srvName; 
     
-    // ВЫТАСКИВАЕМ ЦИФРЫ ИЗ СТРОКИ "от 250 000 ₽"
     const cleanPrice = srvPriceStr.replace(/\D/g, ''); 
     form.querySelector('.booking-price-input').value = cleanPrice;
 
@@ -744,7 +749,6 @@
     }
   });
 
-  // --- ЛОГИКА ОПЛАТЫ ---
   const paymentModal = document.getElementById('payment-modal');
   let currentPayId = null;
 
@@ -757,7 +761,6 @@
     playSound('modal');
   };
 
-  // Маска для карты
   document.getElementById('card-number').addEventListener('input', (e) => {
     let val = e.target.value.replace(/\D/g, '');
     let formatted = val.match(/.{1,4}/g)?.join(' ') || '';

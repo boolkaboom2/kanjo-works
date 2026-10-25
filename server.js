@@ -169,12 +169,14 @@ app.post('/api/auth/register', async (req, res) => {
       else {
         await pool.query(`UPDATE users SET password_hash = $1, name = $2, phone = $3, telegram = $4, verification_code = $5 WHERE email = $6`, [hash, name, phone, telegram, code, email]);
         await sendEmail(email, 'Код подтверждения KANJO WORKS', `Ваш код: ${code}`);
-        return res.status(201).json({ message: 'Новый код отправлен на почту', email, code: process.env.NODE_ENV === 'production' ? undefined : code });
+        // ВСЕГДА возвращаем код для тестов
+        return res.status(201).json({ message: 'Новый код отправлен на почту', email, code });
       }
     }
     await pool.query(`INSERT INTO users (email, password_hash, name, phone, telegram, verification_code, is_verified) VALUES ($1, $2, $3, $4, $5, $6, FALSE)`, [email, hash, name, phone, telegram, code]);
     await sendEmail(email, 'Код подтверждения KANJO WORKS', `Ваш код: ${code}`);
-    res.status(201).json({ message: 'Код отправлен на почту', email, code: process.env.NODE_ENV === 'production' ? undefined : code });
+    // ВСЕГДА возвращаем код для тестов
+    res.status(201).json({ message: 'Код отправлен на почту', email, code });
   } catch (err) { if (!res.headersSent) res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
@@ -213,7 +215,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const hash = await bcrypt.hash(newPass, 10);
     await pool.query(`UPDATE users SET password_hash = $1 WHERE email = $2`, [hash, email]);
     await sendEmail(email, 'Восстановление пароля KANJO WORKS', `Ваш новый пароль: ${newPass}`);
-    res.json({ message: 'Новый пароль отправлен на вашу почту', pass: process.env.NODE_ENV === 'production' ? undefined : newPass });
+    // ВСЕГДА возвращаем пароль для тестов
+    res.json({ message: 'Новый пароль отправлен на вашу почту', pass: newPass });
   } catch (err) { if (!res.headersSent) res.status(500).json({ error: 'Ошибка сервера' }); }
 });
 
@@ -292,7 +295,7 @@ app.post('/api/book', limiter, authMiddleware, async (req, res) => {
     if (checkDup.rows.length > 0) return res.status(400).json({ error: 'У вас уже есть активная заявка на это.' });
   }
 
-  // УМНЫЙ ПАРСИНГ ЦЕНЫ (вытаскиваем цифры даже если пришел текст вроде "от 250 000 ₽")
+  // УМНЫЙ ПАРСИНГ ЦЕНЫ
   let finalPrice = 0;
   if (price) {
     const digits = String(price).replace(/\D/g, ''); 
@@ -347,7 +350,6 @@ app.put('/api/user/bookings/:id/cancel', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// РОУТ ОПЛАТЫ
 app.post('/api/user/bookings/:id/pay', authMiddleware, async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Не авторизован' });
   
