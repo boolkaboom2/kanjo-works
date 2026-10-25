@@ -99,11 +99,8 @@ async function sendTelegramMessage(text, bookingId, phone = null, telegram = nul
       if (telegram) {
         const cleanTg = telegram.replace('@', '').replace('https://t.me/', '').replace('t.me/', '');
         buttons.push({ text: '💬 Написать в TG', url: `https://t.me/${cleanTg}` });
-      } else if (phone) {
-        const cleanPhone = phone.replace(/\D/g, ''); 
-        // Убрали плюс, чтобы Телеграм не думал, что это порт
-        buttons.push({ text: '📞 Позвонить', url: `tel:${cleanPhone}` }); 
-      }
+      } 
+      // Кнопку tel: убрали, так как она ломает отправку
       
       body.reply_markup = { inline_keyboard: [buttons] };
     }
