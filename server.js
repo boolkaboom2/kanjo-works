@@ -84,34 +84,14 @@ async function initDB() {
       id SERIAL PRIMARY KEY, user_id INTEGER REFERENCES users(id), name VARCHAR(255), text TEXT, rating INTEGER, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
     await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS booking_id INTEGER REFERENCES bookings(id)`);
-
-    const checkCars = await pool.query('SELECT COUNT(*) FROM cars');
-    if (parseInt(checkCars.rows[0].count) === 0) {
-      const initialCars = [
-        ['NISSAN SILVIA S15', 'SR20DET // 450HP', 'img/car1.jpg', 'SR20DET', '450 HP', '1240 kg', 'RWD', '4.5 sec', 'Классика дрифта.'],
-        ['TOYOTA SUPRA MK4', '2JZ-GTE // 800HP', 'img/car2.jpg', '2JZ-GTE', '800 HP', '1510 kg', 'RWD', '3.8 sec', 'Легенда.'],
-        ['MAZDA RX-7 FD3S', '13B-REW // 500HP', 'img/car3.jpg', '13B-REW', '500 HP', '1270 kg', 'RWD', '4.0 sec', 'Роторный.'],
-        ['HONDA NSX NA1', 'C30A // 350HP', 'img/car4.jpg', 'C30A', '350 HP', '1370 kg', 'RWD', '4.8 sec', 'Суперкар.'],
-        ['SUBARU IMPREZA 22B', 'EJ22 // 400HP', 'img/car5.jpg', 'EJ22', '400 HP', '1270 kg', 'AWD', '4.2 sec', 'Ралли.']
-      ];
-      for (let c of initialCars) await pool.query(`INSERT INTO cars (title, spec, img, engine, hp, weight, drive, accel, description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, c);
-    }
-    
-    const checkSrv = await pool.query('SELECT COUNT(*) FROM services');
-    if (parseInt(checkSrv.rows[0].count) === 0) {
-      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('01', 'ENGINE SWAP', 'Свап двигателей.', 'Свапы.', 'Снятие\nУстановка', 'от 250 000 ₽')`);
-      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('02', 'AERO KIT', 'Обвесы.', 'Аэродинамика.', 'Разметка\nПокраска', 'от 120 000 ₽')`);
-      await pool.query(`INSERT INTO services (num, title, short, full_description, works, price) VALUES ('03', 'ECU TUNING', 'Прошивка.', 'Настройка.', 'Стенд\nТест', 'от 80 000 ₽')`);
-    }
   } catch (err) { console.error('DB Init Error:', err); }
 }
 initDB();
 
-// ИСПРАВЛЕНА ОТПРАВКА В TG (убрали markdown)
 async function sendTelegramMessage(text, bookingId, phone = null, telegram = null) {
   if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
   try {
-    const body = { chat_id: TELEGRAM_CHAT_ID, text: text }; 
+    const body = { chat_id: TELEGRAM_CHAT_ID, text: text };
     
     if (bookingId) {
       const buttons = [{ text: '✅ Выполнено', callback_data: `done_${bookingId}` }];
@@ -121,7 +101,8 @@ async function sendTelegramMessage(text, bookingId, phone = null, telegram = nul
         buttons.push({ text: '💬 Написать в TG', url: `https://t.me/${cleanTg}` });
       } else if (phone) {
         const cleanPhone = phone.replace(/\D/g, ''); 
-        buttons.push({ text: '📞 Позвонить', url: `tel:+${cleanPhone}` }); 
+        // Убрали плюс, чтобы Телеграм не думал, что это порт
+        buttons.push({ text: '📞 Позвонить', url: `tel:${cleanPhone}` }); 
       }
       
       body.reply_markup = { inline_keyboard: [buttons] };
@@ -384,11 +365,23 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/admin', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html')); });
 app.get('/api/admin/bookings', adminAuthMiddleware, async (req, res) => { const r = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC'); res.json(r.rows); });
 app.put('/api/admin/bookings/:id/status', adminAuthMiddleware, async (req, res) => { await pool.query(`UPDATE bookings SET status = $1 WHERE id = $2`, [req.body.status, req.params.id]); res.json({ message: 'OK' }); });
-app.delete('/api/admin/bookings/:id', adminAuthMiddleware, async (req, res) => { await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]); res.json({ message: 'Заявка удалена' }); });
+
+app.delete('/api/admin/bookings/:id', adminAuthMiddleware, async (req, res) => { 
+  try {
+    // Сначала удаляем отзыв, привязанный к заявке, чтобы не сработал Foreign Key
+    await pool.query(`DELETE FROM reviews WHERE booking_id = $1`, [req.params.id]);
+    await pool.query(`DELETE FROM bookings WHERE id = $1`, [req.params.id]); 
+    res.json({ message: 'Заявка удалена' }); 
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/admin/clients', adminAuthMiddleware, async (req, res) => { const r = await pool.query('SELECT id, email, name, phone, telegram, created_at FROM users ORDER BY id DESC'); res.json(r.rows); });
+
 app.delete('/api/admin/clients/:id', adminAuthMiddleware, async (req, res) => {
   try {
     const clientId = req.params.id;
+    // Удаляем отзывы, привязанные к заявкам этого клиента
+    await pool.query('DELETE FROM reviews WHERE booking_id IN (SELECT id FROM bookings WHERE user_id = $1)', [clientId]);
     await pool.query('DELETE FROM bookings WHERE user_id = $1', [clientId]);
     await pool.query('DELETE FROM saved_builds WHERE user_id = $1', [clientId]);
     await pool.query('DELETE FROM reviews WHERE user_id = $1', [clientId]);
