@@ -1,6 +1,19 @@
 (() => {
   'use strict';
 
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
+      tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+    );
+  }
+
   window.addEventListener('load', async () => {
     try { await fetch('/api/cars', { method: 'HEAD', cache: 'no-store' }).catch(() => {}); } 
     finally { const p = document.getElementById('preloader'); if (p) setTimeout(() => p.classList.add('hidden'), 800); }
@@ -103,19 +116,19 @@
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
     const res = await fetch('/api/cars'); carsData = await res.json();
     
-    grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${c.img}" alt="${c.title}"><div class="gallery-item-info"><h4>${c.title}</h4><p>${c.spec}</p></div></div>`).join('');
+    grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
         const car = carsData[item.dataset.index]; playSound('click'); 
-        document.getElementById('cm-img').src = car.img; document.getElementById('cm-title').textContent = car.title; document.getElementById('cm-spec').textContent = car.spec;
-        document.getElementById('cm-engine').textContent = car.engine; document.getElementById('cm-hp').textContent = car.hp; document.getElementById('cm-weight').textContent = car.weight;
-        document.getElementById('cm-drive').textContent = car.drive; document.getElementById('cm-accel').textContent = car.accel; document.getElementById('cm-desc').textContent = car.description;
+        document.getElementById('cm-img').src = escapeHTML(car.img); document.getElementById('cm-title').textContent = escapeHTML(car.title); document.getElementById('cm-spec').textContent = escapeHTML(car.spec);
+        document.getElementById('cm-engine').textContent = escapeHTML(car.engine); document.getElementById('cm-hp').textContent = escapeHTML(car.hp); document.getElementById('cm-weight').textContent = escapeHTML(car.weight);
+        document.getElementById('cm-drive').textContent = escapeHTML(car.drive); document.getElementById('cm-accel').textContent = escapeHTML(car.accel); document.getElementById('cm-desc').textContent = escapeHTML(car.description);
         closeAllModals(); document.getElementById('car-modal').classList.add('open');
       });
     });
 
     if (optionsContainer && carsData.length > 0) {
-      optionsContainer.innerHTML = carsData.map(c => `<div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${c.title}</div>`).join('');
+      optionsContainer.innerHTML = carsData.map(c => `<div class="select-option" data-id="${c.id}" data-hp="${parseInt(c.hp) || 200}" data-price="1500000">${escapeHTML(c.title)}</div>`).join('');
       optionsContainer.addEventListener('wheel', (e) => e.stopPropagation(), { passive: true });
 
       document.querySelectorAll('.select-option').forEach(opt => {
@@ -143,12 +156,12 @@
   async function loadServices() {
     const grid = document.getElementById('services-grid'); if (!grid) return;
     const res = await fetch('/api/services'); servicesData = await res.json();
-    grid.innerHTML = servicesData.map(s => `<div class="service-card" data-id="${s.id}"><span class="num">${s.num}</span><h3>${s.title}</h3><p>${s.short}</p></div>`).join('');
+    grid.innerHTML = servicesData.map(s => `<div class="service-card" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
     document.querySelectorAll('.service-card').forEach(card => {
       card.addEventListener('click', () => {
         const srv = servicesData.find(s => s.id === parseInt(card.dataset.id));
-        document.getElementById('srv-title').textContent = srv.title; document.getElementById('srv-desc').textContent = srv.full_description; document.getElementById('srv-price').textContent = srv.price;
-        document.getElementById('srv-list').innerHTML = srv.works.split('\n').map(w => `<li>${w}</li>`).join('');
+        document.getElementById('srv-title').textContent = escapeHTML(srv.title); document.getElementById('srv-desc').textContent = escapeHTML(srv.full_description); document.getElementById('srv-price').textContent = escapeHTML(srv.price);
+        document.getElementById('srv-list').innerHTML = srv.works.split('\n').map(w => `<li>${escapeHTML(w)}</li>`).join('');
         closeAllModals(); document.getElementById('service-modal').classList.add('open'); playSound('modal');
       });
     });
@@ -162,9 +175,9 @@
       grid.innerHTML = reviews.length ? reviews.map(r => `
         <div class="review-card">
           <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
-          <p class="review-text">"${r.text}"</p>
-          <p style="color:var(--red); font-size:12px; margin-bottom:5px;">Заказ: ${r.target_car || 'Неизвестно'}</p>
-          <span class="review-author">— ${r.name}</span>
+          <p class="review-text">"${escapeHTML(r.text)}"</p>
+          <p style="color:var(--red); font-size:12px; margin-bottom:5px;">Заказ: ${escapeHTML(r.target_car) || 'Неизвестно'}</p>
+          <span class="review-author">— ${escapeHTML(r.name)}</span>
         </div>
       `).join('') : '<p style="color:var(--grey);">Пока нет отзывов.</p>';
     } catch(e) {}
@@ -187,7 +200,6 @@
   document.getElementById('confirm-yes').addEventListener('click', () => { if (confirmCallback) confirmCallback(); confirmModal.classList.remove('open'); });
   document.getElementById('confirm-no').addEventListener('click', () => { confirmModal.classList.remove('open'); });
 
-  // МОДАЛКА ОТМЕНЫ
   const cancelModal = document.getElementById('cancel-modal');
   let currentCancelId = null;
 
@@ -378,9 +390,9 @@
     const b = await res.json();
     list.innerHTML = b.length ? b.map(x => `
       <div class="profile-card">
-        <div class="profile-card-info"><h4>${x.car}</h4><p>Имя: ${x.name} | Тел: ${x.phone}</p></div>
+        <div class="profile-card-info"><h4>${escapeHTML(x.car)}</h4><p>Имя: ${escapeHTML(x.name)} | Тел: ${escapeHTML(x.phone)}</p></div>
         <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:5px;">
-          <span class="status-badge status-${x.status==='В работе'?'work':(x.status==='Выполнена'?'done':(x.status==='Отменена'?'cancel':'new'))}">${x.status}</span>
+          <span class="status-badge status-${x.status==='В работе'?'work':(x.status==='Выполнена'?'done':(x.status==='Отменена'?'cancel':'new'))}">${escapeHTML(x.status)}</span>
           <small style="font-family: monospace; color: var(--grey);">${new Date(x.created_at).toLocaleString()}</small>
           ${x.status !== 'Отменена' && x.status !== 'Выполнена' ? `<button onclick="cancelUserBooking(${x.id})" style="background:none; border:none; color:var(--grey); font-size:12px; cursor:pointer; text-decoration:underline;">Отменить</button>` : ''}
         </div>
@@ -394,7 +406,7 @@
     const b = await res.json();
     list.innerHTML = b.length ? b.map(x => `
       <div class="profile-card" style="border-left: 2px solid var(--red);">
-        <div class="profile-card-info"><h4>${x.car_name}</h4><p>${x.build_text} (${x.total_hp} HP)</p><p style="color:var(--red); margin-top:5px;">${x.total_price} ₽</p></div>
+        <div class="profile-card-info"><h4>${escapeHTML(x.car_name)}</h4><p>${escapeHTML(x.build_text)} (${x.total_hp} HP)</p><p style="color:var(--red); margin-top:5px;">${x.total_price} ₽</p></div>
         <button onclick="deleteBuild(${x.id})" style="background:none; border:none; color:#888; cursor:pointer; font-size:20px;">✕</button>
       </div>
     `).join('') : '<p>Гараж пуст. Соберите свою легенду!</p>';
@@ -445,7 +457,7 @@
 
     if (unreviewedBookings.length > 0) {
       formContainer.style.display = 'block';
-      select.innerHTML = unreviewedBookings.map(b => `<option value="${b.id}">${b.car}</option>`).join('');
+      select.innerHTML = unreviewedBookings.map(b => `<option value="${b.id}">${escapeHTML(b.car)}</option>`).join('');
     } else {
       formContainer.style.display = 'none'; 
     }
@@ -453,9 +465,9 @@
     list.innerHTML = userReviews.length ? userReviews.map(r => `
       <div class="profile-card">
         <div class="profile-card-info">
-          <h4>${r.name} <span style="color:var(--red); font-size:14px;">${'★'.repeat(r.rating)}</span></h4>
-          <p style="font-size:12px; color:var(--red); margin-bottom:5px;">Работа: ${r.target_car || 'Неизвестно'}</p>
-          <p>${r.text}</p>
+          <h4>${escapeHTML(r.name)} <span style="color:var(--red); font-size:14px;">${'★'.repeat(r.rating)}</span></h4>
+          <p style="font-size:12px; color:var(--red); margin-bottom:5px;">Работа: ${escapeHTML(r.target_car) || 'Неизвестно'}</p>
+          <p>${escapeHTML(r.text)}</p>
         </div>
       </div>
     `).join('') : '<p>Вы пока не оставляли отзывов.</p>';

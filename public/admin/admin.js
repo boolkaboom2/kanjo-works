@@ -1,11 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
+      tag => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          "'": '&#39;',
+          '"': '&quot;'
+        }[tag] || tag)
+    );
+  }
+
   const token = localStorage.getItem('kanjo_admin_token');
   const loginModal = document.getElementById('login-modal');
   const adminTabs = document.getElementById('admin-tabs');
   const adminMain = document.getElementById('admin-main');
   const btnLogout = document.getElementById('btn-logout');
 
-  // Перехватываем fetch, чтобы всегда добавлять токен
   const originalFetch = window.fetch;
   window.fetch = async (...args) => {
     let [resource, config] = args;
@@ -19,7 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const response = await originalFetch(resource, config);
     if (response.status === 401 && resource.startsWith('/api/admin')) {
-      // Если токен протух или неверный — выкидываем на логин
       localStorage.removeItem('kanjo_admin_token');
       loginModal.style.display = 'flex';
       adminTabs.style.display = 'none';
@@ -78,7 +89,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initAdminUI();
   });
 
-  // --- ЛОГИКА ВКЛАДОК ---
   const tabs = document.querySelectorAll('.tab-btn');
   const contents = document.querySelectorAll('.tab-content');
   tabs.forEach(tab => {
@@ -106,7 +116,6 @@ document.addEventListener('DOMContentLoaded', () => {
     newNoBtn.addEventListener('click', () => modal.classList.remove('open'));
   }
 
-  // --- ЗАЯВКИ ---
   async function loadBookings() {
     const tbody = document.getElementById('bookings-list');
     try {
@@ -116,9 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = data.map(b => `
         <tr>
           <td>${b.id}</td>
-          <td>${b.name}</td>
-          <td>${b.phone}</td>
-          <td>${b.car} ${b.price ? `<br><small style="color:var(--grey);">${b.price} ₽</small>` : ''}</td>
+          <td>${escapeHTML(b.name)}</td>
+          <td>${escapeHTML(b.phone)}</td>
+          <td>${escapeHTML(b.car)} ${b.price ? `<br><small style="color:var(--grey);">${b.price} ₽</small>` : ''}</td>
           <td>
             <select onchange="updateBookingStatus(${b.id}, this.value)" class="status-select status-${b.status.replace(/\s+/g, '_')}">
               <option value="Новая" ${b.status==='Новая'?'selected':''}>Новая</option>
@@ -127,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <option value="Отменена" ${b.status==='Отменена'?'selected':''}>Отменена</option>
             </select>
           </td>
-          <td>${b.status === 'Отменена' && b.cancel_reason ? b.cancel_reason : '-'}</td>
+          <td>${b.status === 'Отменена' && b.cancel_reason ? escapeHTML(b.cancel_reason) : '-'}</td>
           <td>${new Date(b.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteAdminBooking(${b.id})">УДАЛИТЬ</span></td>
         </tr>
@@ -147,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // --- КЛИЕНТЫ ---
   async function loadClients() {
     const tbody = document.getElementById('clients-list');
     try {
@@ -157,9 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = data.map(c => `
         <tr>
           <td>${c.id}</td>
-          <td>${c.email}</td>
-          <td>${c.name || '-'}</td>
-          <td>${c.phone || '-'}</td>
+          <td>${escapeHTML(c.email)}</td>
+          <td>${escapeHTML(c.name) || '-'}</td>
+          <td>${escapeHTML(c.phone) || '-'}</td>
           <td>${new Date(c.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteClient(${c.id})">Удалить</span></td>
         </tr>
@@ -174,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  // --- МАШИНЫ ---
   const carModal = document.getElementById('car-modal');
   const carForm = document.getElementById('car-form');
   let allCars = [];
@@ -189,9 +196,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
         <tr>
           <td>${c.id}</td>
-          <td><img src="${imgUrl}" alt="${c.title}"></td>
-          <td>${c.title}</td>
-          <td>${c.spec}</td>
+          <td><img src="${escapeHTML(imgUrl)}" alt="${escapeHTML(c.title)}"></td>
+          <td>${escapeHTML(c.title)}</td>
+          <td>${escapeHTML(c.spec)}</td>
           <td>
             <span class="action-link" onclick="openEditCar(${c.id})">Изменить</span>
             <span class="action-link delete" onclick="deleteCar(${c.id})">Удалить</span>
@@ -252,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCars();
   });
 
-  // --- УСЛУГИ ---
   const srvModal = document.getElementById('service-modal');
   const srvForm = document.getElementById('service-form');
   let allServices = [];
@@ -265,8 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = allServices.map(s => `
         <tr>
           <td>${s.id}</td>
-          <td>${s.title}</td>
-          <td>${s.price}</td>
+          <td>${escapeHTML(s.title)}</td>
+          <td>${escapeHTML(s.price)}</td>
           <td>
             <span class="action-link" onclick="openEditService(${s.id})">Изменить</span>
             <span class="action-link delete" onclick="deleteService(${s.id})">Удалить</span>
@@ -321,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadServices();
   });
 
-  // --- ОТЗЫВЫ ---
   async function loadReviews() {
     const tbody = document.getElementById('reviews-list');
     try {
@@ -331,10 +336,10 @@ document.addEventListener('DOMContentLoaded', () => {
       tbody.innerHTML = data.map(r => `
         <tr>
           <td>${r.id}</td>
-          <td>${r.name}</td>
+          <td>${escapeHTML(r.name)}</td>
           <td style="color:var(--red);">${'★'.repeat(r.rating)}</td>
-          <td style="color:var(--grey); font-size:12px;">${r.target_car || '-'}</td>
-          <td>${r.text}</td>
+          <td style="color:var(--grey); font-size:12px;">${escapeHTML(r.target_car) || '-'}</td>
+          <td>${escapeHTML(r.text)}</td>
           <td>${new Date(r.created_at).toLocaleString('ru-RU')}</td>
           <td><span class="action-link delete" onclick="deleteReview(${r.id})">Удалить</span></td>
         </tr>
