@@ -26,7 +26,7 @@
     finally { 
       const p = document.getElementById('preloader'); 
       if (p) setTimeout(() => p.classList.add('hidden'), 800); 
-      initReveal(); // Запускаем анимацию для статичных элементов
+      initReveal(); 
     }
   });
 
@@ -121,9 +121,16 @@
 
   async function loadCars() {
     const grid = document.getElementById('gallery-grid'); if (!grid) return;
+    
+    // Скелетоны для машин
+    grid.innerHTML = Array(4).fill(0).map(() => `
+      <div class="skeleton-card-car">
+        <div class="skeleton"></div>
+      </div>
+    `).join('');
+
     const res = await fetch('/api/cars'); carsData = await res.json();
     
-    // Добавляем класс reveal и задержку
     grid.innerHTML = carsData.map((c, i) => `<div class="gallery-item reveal reveal-delay-${(i % 3) + 1}" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
     
     document.querySelectorAll('.gallery-item').forEach(item => {
@@ -153,7 +160,7 @@
         calculateConfig();
       }
     }
-    initReveal(); // Запускаем анимацию для динамических карточек
+    initReveal();
   }
 
   if (selectTrigger) {
@@ -163,8 +170,18 @@
 
   async function loadServices() {
     const grid = document.getElementById('services-grid'); if (!grid) return;
+    
+    // Скелетоны для услуг
+    grid.innerHTML = Array(3).fill(0).map(() => `
+      <div class="skeleton-card-service">
+        <div class="skeleton skeleton-line title"></div>
+        <div class="skeleton skeleton-line text"></div>
+        <div class="skeleton skeleton-line text" style="width: 70%;"></div>
+      </div>
+    `).join('');
+
     const res = await fetch('/api/services'); servicesData = await res.json();
-    // Добавляем класс reveal и задержку
+    
     grid.innerHTML = servicesData.map((s, i) => `<div class="service-card reveal reveal-delay-${(i % 3) + 1}" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
     
     document.querySelectorAll('.service-card').forEach(card => {

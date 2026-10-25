@@ -429,4 +429,9 @@ app.post('/api/telegram-webhook', async (req, res) => {
   res.sendStatus(200);
 });
 
+// 404 Handler
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
 app.listen(PORT, () => console.log(`[SERVER] Запущен на порту ${PORT}`));
