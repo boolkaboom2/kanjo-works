@@ -223,6 +223,22 @@
     </div>
   </div>
 
+  <!-- МОДАЛКА ВОССТАНОВЛЕНИЯ ПАРОЛЯ -->
+  <div id="forgot-modal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal">✕</button>
+      <h2>ВОССТАНОВЛЕНИЕ</h2>
+      <p>Введите ваш Email, и мы вышлем новый пароль.</p>
+      <form id="forgot-form" novalidate>
+        <div class="input-group">
+          <input type="email" id="forgot-email" placeholder="EMAIL" required>
+          <span class="error-msg"></span>
+        </div>
+        <button type="submit" id="forgot-submit-btn" class="btn-racing full-width">ОТПРАВИТЬ</button>
+      </form>
+    </div>
+  </div>
+
   <div id="profile-modal" class="modal">
     <div class="modal-content wide" style="max-width: 800px;">
       <button class="close-modal close-profile">✕</button>

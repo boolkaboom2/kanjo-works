@@ -6,7 +6,7 @@
     return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
   }
 
-  // ПЕРЕМЕЩЕНО НАВЕРХ: чтобы избежать ReferenceError
+  // ПЕРЕМЕЩЕНО НАВЕРХ
   const partsCbs = document.querySelectorAll('.part-row input[type="checkbox"]');
 
   const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
@@ -131,12 +131,7 @@
       return;
     }
 
-    grid.innerHTML = Array(4).fill(0).map(() => `
-      <div class="skeleton-card-car">
-        <div class="skeleton"></div>
-      </div>
-    `).join('');
-
+    grid.innerHTML = Array(4).fill(0).map(() => `<div class="skeleton-card-car"><div class="skeleton"></div></div>`).join('');
     const res = await fetch('/api/cars'); 
     carsData = await res.json();
     sessionStorage.setItem('kanjo_cars', JSON.stringify(carsData));
@@ -146,7 +141,6 @@
   function renderCars(data) {
     const grid = document.getElementById('gallery-grid');
     grid.innerHTML = data.map((c, i) => `<div class="gallery-item reveal reveal-delay-${(i % 3) + 1}" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
-    
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
         const car = data[item.dataset.index]; playSound('click'); 
@@ -192,14 +186,7 @@
       return;
     }
 
-    grid.innerHTML = Array(3).fill(0).map(() => `
-      <div class="skeleton-card-service">
-        <div class="skeleton skeleton-line title"></div>
-        <div class="skeleton skeleton-line text"></div>
-        <div class="skeleton skeleton-line text" style="width: 70%;"></div>
-      </div>
-    `).join('');
-
+    grid.innerHTML = Array(3).fill(0).map(() => `<div class="skeleton-card-service"><div class="skeleton skeleton-line title"></div><div class="skeleton skeleton-line text"></div><div class="skeleton skeleton-line text" style="width: 70%;"></div></div>`).join('');
     const res = await fetch('/api/services'); 
     servicesData = await res.json();
     sessionStorage.setItem('kanjo_services', JSON.stringify(servicesData));
@@ -209,7 +196,6 @@
   function renderServices(data) {
     const grid = document.getElementById('services-grid');
     grid.innerHTML = data.map((s, i) => `<div class="service-card reveal reveal-delay-${(i % 3) + 1}" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
-    
     document.querySelectorAll('.service-card').forEach(card => {
       card.addEventListener('click', () => {
         const srv = data.find(s => s.id === parseInt(card.dataset.id));
@@ -287,23 +273,28 @@
   const authModal = document.getElementById('auth-modal');
 
   function updateAuthUI() {
-    document.getElementById('login-btn').style.display = authToken ? 'none' : 'block';
-    document.getElementById('profile-btn').style.display = authToken ? 'flex' : 'none';
+    const loginBtn = document.getElementById('login-btn');
+    const profileBtn = document.getElementById('profile-btn');
+    if (loginBtn) loginBtn.style.display = authToken ? 'none' : 'block';
+    if (profileBtn) profileBtn.style.display = authToken ? 'flex' : 'none';
   }
   updateAuthUI();
 
-  document.getElementById('login-btn').addEventListener('click', () => {
-    document.getElementById('auth-form').reset(); document.getElementById('verify-form').reset();
-    document.getElementById('auth-step-1').style.display = 'block'; document.getElementById('auth-step-2').style.display = 'none';
-    document.getElementById('auth-error').style.display = 'none';
-    const loginTab = document.querySelector('.auth-tab[data-mode="login"]');
-    if (loginTab) {
-      document.querySelectorAll('.auth-tab[data-mode]').forEach(t => t.classList.remove('active'));
-      loginTab.classList.add('active'); document.querySelectorAll('.reg-only').forEach(el => el.style.display = 'none');
-      document.getElementById('auth-submit-btn').textContent = 'ВОЙТИ';
-    }
-    authModal.classList.add('open');
-  });
+  const loginBtn = document.getElementById('login-btn');
+  if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+      document.getElementById('auth-form').reset(); document.getElementById('verify-form').reset();
+      document.getElementById('auth-step-1').style.display = 'block'; document.getElementById('auth-step-2').style.display = 'none';
+      document.getElementById('auth-error').style.display = 'none';
+      const loginTab = document.querySelector('.auth-tab[data-mode="login"]');
+      if (loginTab) {
+        document.querySelectorAll('.auth-tab[data-mode]').forEach(t => t.classList.remove('active'));
+        loginTab.classList.add('active'); document.querySelectorAll('.reg-only').forEach(el => el.style.display = 'none');
+        document.getElementById('auth-submit-btn').textContent = 'ВОЙТИ';
+      }
+      authModal.classList.add('open');
+    });
+  }
 
   document.querySelectorAll('.auth-tab[data-mode]').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -331,102 +322,113 @@
     return isValid;
   }
 
-  document.getElementById('auth-form').addEventListener('submit', async (e) => {
-    e.preventDefault(); if (!validateForm(e.target)) return;
-    const isLogin = document.querySelector('.auth-tab[data-mode].active').dataset.mode === 'login';
-    const btn = document.getElementById('auth-submit-btn'); btn.textContent = 'ЗАГРУЗКА...';
-    const email = document.getElementById('auth-email').value;
-    const body = { email, password: document.getElementById('auth-password').value };
-    if (!isLogin) { 
-      body.name = document.getElementById('auth-name').value; 
-      body.phone = document.getElementById('auth-phone').value; 
-      body.telegram = document.getElementById('auth-telegram').value;
-    }
-
-    try {
-      const res = await fetch(isLogin ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await res.json(); 
-      if (!res.ok) {
-        if (data.needsVerify) {
-          tempEmail = data.email; document.getElementById('auth-step-1').style.display = 'none';
-          document.getElementById('auth-step-2').style.display = 'block'; showToast('Введите код подтверждения', 'success'); return;
-        }
-        throw new Error(data.error);
+  const authForm = document.getElementById('auth-form');
+  if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); if (!validateForm(e.target)) return;
+      const isLogin = document.querySelector('.auth-tab[data-mode].active').dataset.mode === 'login';
+      const btn = document.getElementById('auth-submit-btn'); btn.textContent = 'ЗАГРУЗКА...';
+      const email = document.getElementById('auth-email').value;
+      const body = { email, password: document.getElementById('auth-password').value };
+      if (!isLogin) { 
+        body.name = document.getElementById('auth-name').value; 
+        body.phone = document.getElementById('auth-phone').value; 
+        body.telegram = document.getElementById('auth-telegram').value;
       }
-      if (isLogin) {
-        authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
-        updateAuthUI(); authModal.classList.remove('open'); e.target.reset();
-        showToast('Успешный вход в систему!', 'success'); loadProfile();
-      } else {
-        tempEmail = email; 
-        document.getElementById('auth-step-1').style.display = 'none';
-        document.getElementById('auth-step-2').style.display = 'block';
-        
-        if (data.code) {
-          showToast(`Ваш код: ${data.code}`, 'success'); 
-          document.getElementById('auth-code').value = data.code;
+
+      try {
+        const res = await fetch(isLogin ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json(); 
+        if (!res.ok) {
+          if (data.needsVerify) {
+            tempEmail = data.email; document.getElementById('auth-step-1').style.display = 'none';
+            document.getElementById('auth-step-2').style.display = 'block'; showToast('Введите код подтверждения', 'success'); return;
+          }
+          throw new Error(data.error);
+        }
+        if (isLogin) {
+          authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
+          updateAuthUI(); authModal.classList.remove('open'); e.target.reset();
+          showToast('Успешный вход в систему!', 'success'); loadProfile();
         } else {
-          showToast('Код отправлен на почту', 'success');
+          tempEmail = email; 
+          document.getElementById('auth-step-1').style.display = 'none';
+          document.getElementById('auth-step-2').style.display = 'block';
+          if (data.code) {
+            showToast(`Ваш код: ${data.code}`, 'success'); 
+            document.getElementById('auth-code').value = data.code;
+          } else {
+            showToast('Код отправлен на почту', 'success');
+          }
         }
-      }
-    } catch (err) { document.getElementById('auth-error').textContent = err.message; document.getElementById('auth-error').style.display = 'block'; } 
-    finally { btn.textContent = isLogin ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'; }
-  });
+      } catch (err) { document.getElementById('auth-error').textContent = err.message; document.getElementById('auth-error').style.display = 'block'; } 
+      finally { btn.textContent = isLogin ? 'ВОЙТИ' : 'СОЗДАТЬ АККАУНТ'; }
+    });
+  }
 
-  document.getElementById('verify-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = document.getElementById('auth-code').value;
-    const btn = document.getElementById('verify-submit-btn'); btn.textContent = 'ПРОВЕРКА...';
-    try {
-      const res = await fetch('/api/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: tempEmail, code }) });
-      const data = await res.json(); if (!res.ok) throw new Error(data.error);
-      authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
-      updateAuthUI(); authModal.classList.remove('open'); 
-      document.getElementById('auth-step-1').style.display = 'block'; document.getElementById('auth-step-2').style.display = 'none';
-      document.getElementById('auth-form').reset(); document.getElementById('verify-form').reset();
-      showToast('Аккаунт успешно создан!', 'success'); loadProfile();
-    } catch (err) { document.getElementById('auth-error').textContent = err.message; document.getElementById('auth-error').style.display = 'block'; } 
-    finally { btn.textContent = 'ПОДТВЕРДИТЬ'; }
-  });
+  const verifyForm = document.getElementById('verify-form');
+  if (verifyForm) {
+    verifyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const code = document.getElementById('auth-code').value;
+      const btn = document.getElementById('verify-submit-btn'); btn.textContent = 'ПРОВЕРКА...';
+      try {
+        const res = await fetch('/api/auth/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: tempEmail, code }) });
+        const data = await res.json(); if (!res.ok) throw new Error(data.error);
+        authToken = data.token; currentUser = data.user; localStorage.setItem('kanjo_token', authToken);
+        updateAuthUI(); authModal.classList.remove('open'); 
+        document.getElementById('auth-step-1').style.display = 'block'; document.getElementById('auth-step-2').style.display = 'none';
+        document.getElementById('auth-form').reset(); document.getElementById('verify-form').reset();
+        showToast('Аккаунт успешно создан!', 'success'); loadProfile();
+      } catch (err) { document.getElementById('auth-error').textContent = err.message; document.getElementById('auth-error').style.display = 'block'; } 
+      finally { btn.textContent = 'ПОДТВЕРДИТЬ'; }
+    });
+  }
 
   // КАСТОМНАЯ МОДАЛКА ВОССТАНОВЛЕНИЯ ПАРОЛЯ
-  document.getElementById('forgot-pass-btn').addEventListener('click', (e) => {
-    e.preventDefault();
-    closeAllModals();
-    document.getElementById('forgot-modal').classList.add('open');
-    document.getElementById('forgot-form').reset();
-  });
+  const forgotBtn = document.getElementById('forgot-pass-btn');
+  if (forgotBtn) {
+    forgotBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeAllModals();
+      document.getElementById('forgot-modal').classList.add('open');
+      document.getElementById('forgot-form').reset();
+    });
+  }
 
-  document.getElementById('forgot-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('forgot-email').value;
-    const btn = document.getElementById('forgot-submit-btn');
-    const originalText = btn.textContent;
-    
-    if (!email) return showToast('Введите Email', 'error');
-    btn.textContent = 'ОТПРАВКА...';
-
-    try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
+  const forgotForm = document.getElementById('forgot-form');
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('forgot-email').value;
+      const btn = document.getElementById('forgot-submit-btn');
+      const originalText = btn.textContent;
       
-      if (res.ok) {
-        closeAllModals();
-        showToast(`Новый пароль: ${data.pass}`, 'success');
-        document.getElementById('forgot-form').reset();
-      } else {
-        showToast(data.error, 'error');
+      if (!email) return showToast('Введите Email', 'error');
+      btn.textContent = 'ОТПРАВКА...';
+
+      try {
+        const res = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          closeAllModals();
+          showToast(`Новый пароль: ${data.pass}`, 'success');
+          document.getElementById('forgot-form').reset();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (err) {
+        showToast('Ошибка сервера', 'error');
+      } finally {
+        btn.textContent = originalText;
       }
-    } catch (err) {
-      showToast('Ошибка сервера', 'error');
-    } finally {
-      btn.textContent = originalText;
-    }
-  });
+    });
+  }
 
   async function loadProfile() {
     if (!authToken) return;
@@ -449,8 +451,14 @@
   loadProfile();
 
   function logout() { localStorage.removeItem('kanjo_token'); authToken = null; updateAuthUI(); document.getElementById('profile-modal').classList.remove('open'); showToast('Вы вышли из системы', 'success'); }
-  document.getElementById('logout-btn').addEventListener('click', logout);
-  document.getElementById('profile-btn').addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); loadUserReviews(); });
+  
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) logoutBtn.addEventListener('click', logout);
+  
+  const profileBtn = document.getElementById('profile-btn');
+  if (profileBtn) {
+    profileBtn.addEventListener('click', () => { document.getElementById('profile-modal').classList.add('open'); loadBookings(); loadBuilds(); loadUserReviews(); });
+  }
 
   const tabsList = document.querySelectorAll('.auth-tabs .auth-tab');
   tabsList.forEach(tab => {
@@ -472,31 +480,34 @@
     });
   });
 
-  document.getElementById('profile-edit-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const msg = document.getElementById('profile-msg');
-    const body = {
-      name: document.getElementById('edit-name').value,
-      phone: document.getElementById('edit-phone').value,
-      email: document.getElementById('edit-email').value,
-      telegram: document.getElementById('edit-telegram').value,
-      password: document.getElementById('edit-password').value
-    };
-    try {
-      const res = await fetch('/api/user/profile', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify(body)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        msg.style.display = 'block';
-        setTimeout(() => msg.style.display = 'none', 3000);
-        currentUser = data.user;
-        document.getElementById('edit-password').value = '';
-        showToast('Профиль обновлен', 'success');
-      } else { showToast(data.error, 'error'); }
-    } catch (err) { showToast('Ошибка сервера', 'error'); }
-  });
+  const profileEditForm = document.getElementById('profile-edit-form');
+  if (profileEditForm) {
+    profileEditForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('profile-msg');
+      const body = {
+        name: document.getElementById('edit-name').value,
+        phone: document.getElementById('edit-phone').value,
+        email: document.getElementById('edit-email').value,
+        telegram: document.getElementById('edit-telegram').value,
+        password: document.getElementById('edit-password').value
+      };
+      try {
+        const res = await fetch('/api/user/profile', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          msg.style.display = 'block';
+          setTimeout(() => msg.style.display = 'none', 3000);
+          currentUser = data.user;
+          document.getElementById('edit-password').value = '';
+          showToast('Профиль обновлен', 'success');
+        } else { showToast(data.error, 'error'); }
+      } catch (err) { showToast('Ошибка сервера', 'error'); }
+    });
+  }
 
   async function loadBookings() {
     const list = document.getElementById('profile-bookings-list'); list.innerHTML = 'Загрузка...';
@@ -616,29 +627,32 @@
     `).join('') : '<p>Вы пока не оставляли отзывов.</p>';
   }
 
-  document.getElementById('btn-submit-review')?.addEventListener('click', async () => {
-    const text = document.getElementById('review-text').value;
-    const bookingId = document.getElementById('review-booking-id').value;
+  const submitReviewBtn = document.getElementById('btn-submit-review');
+  if (submitReviewBtn) {
+    submitReviewBtn.addEventListener('click', async () => {
+      const text = document.getElementById('review-text').value;
+      const bookingId = document.getElementById('review-booking-id').value;
 
-    if (!text) return showToast('Напишите текст отзыва', 'error');
-    if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');
-    
-    try {
-      const res = await fetch('/api/user/reviews', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ text, rating: currentRating, booking_id: parseInt(bookingId) })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('Спасибо за отзыв!', 'success');
-        document.getElementById('review-text').value = '';
-        loadUserReviews();
-        loadMainReviews();
-      } else {
-        showToast(data.error, 'error');
-      }
-    } catch (err) { showToast('Ошибка отправки', 'error'); }
-  });
+      if (!text) return showToast('Напишите текст отзыва', 'error');
+      if (!bookingId) return showToast('Нет выполненных заказов для отзыва', 'error');
+      
+      try {
+        const res = await fetch('/api/user/reviews', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ text, rating: currentRating, booking_id: parseInt(bookingId) })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Спасибо за отзыв!', 'success');
+          document.getElementById('review-text').value = '';
+          loadUserReviews();
+          loadMainReviews();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (err) { showToast('Ошибка отправки', 'error'); }
+    });
+  }
 
   const handleForm = async (e) => {
     e.preventDefault(); if (!validateForm(e.target)) return;
@@ -674,8 +688,10 @@
       setTimeout(() => { btn.textContent = originalText; btn.style.color = ''; btn.style.borderColor = ''; }, 2000); 
     }
   };
-  document.getElementById('booking-form').addEventListener('submit', handleForm);
-  document.getElementById('inline-booking-form').addEventListener('submit', handleForm);
+  const bookingForm = document.getElementById('booking-form');
+  if (bookingForm) bookingForm.addEventListener('submit', handleForm);
+  const inlineBookingForm = document.getElementById('inline-booking-form');
+  if (inlineBookingForm) inlineBookingForm.addEventListener('submit', handleForm);
 
   function setupTgField(form) {
     if (!currentUser) return;
@@ -697,76 +713,88 @@
     }
   }
 
-  document.getElementById('btn-book-build').addEventListener('click', () => {
-    const car = selectedText.textContent;
-    const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
-    const text = car + (parts.length ? ` + ${parts.join(' + ')}` : '') + ` (${document.getElementById('total-hp').textContent} HP)`;
-    closeAllModals(); document.getElementById('booking-modal').classList.add('open');
-    const form = document.getElementById('booking-form');
-    form.querySelector('.booking-car').value = text;
-    form.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
-    
-    if (currentUser) {
-      form.querySelector('.booking-name').value = currentUser.name || '';
-      form.querySelector('.phone-input').value = currentUser.phone || '';
-      setupTgField(form);
-      form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
-    }
-  });
+  const btnBookBuild = document.getElementById('btn-book-build');
+  if (btnBookBuild) {
+    btnBookBuild.addEventListener('click', () => {
+      const car = selectedText.textContent;
+      const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
+      const text = car + (parts.length ? ` + ${parts.join(' + ')}` : '') + ` (${document.getElementById('total-hp').textContent} HP)`;
+      closeAllModals(); document.getElementById('booking-modal').classList.add('open');
+      const form = document.getElementById('booking-form');
+      form.querySelector('.booking-car').value = text;
+      form.querySelector('.booking-price-input').value = document.getElementById('total-price').textContent.replace(/\s/g, '');
+      
+      if (currentUser) {
+        form.querySelector('.booking-name').value = currentUser.name || '';
+        form.querySelector('.phone-input').value = currentUser.phone || '';
+        setupTgField(form);
+        form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
+      }
+    });
+  }
 
-  document.getElementById('btn-book-current-car').addEventListener('click', () => {
-    const carName = document.getElementById('cm-title').textContent;
-    closeAllModals();
-    const bookingModal = document.getElementById('booking-modal');
-    bookingModal.classList.add('open'); playSound('modal');
-    const form = document.getElementById('booking-form');
-    form.querySelector('.booking-car').value = carName;
-    
-    form.querySelector('.booking-price-input').value = 1500000;
+  const btnBookCurrentCar = document.getElementById('btn-book-current-car');
+  if (btnBookCurrentCar) {
+    btnBookCurrentCar.addEventListener('click', () => {
+      const carName = document.getElementById('cm-title').textContent;
+      closeAllModals();
+      const bookingModal = document.getElementById('booking-modal');
+      bookingModal.classList.add('open'); playSound('modal');
+      const form = document.getElementById('booking-form');
+      form.querySelector('.booking-car').value = carName;
+      
+      form.querySelector('.booking-price-input').value = 1500000;
 
-    if (currentUser) {
-      form.querySelector('.booking-name').value = currentUser.name || '';
-      form.querySelector('.phone-input').value = currentUser.phone || '';
-      setupTgField(form);
-      form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
-    }
-  });
+      if (currentUser) {
+        form.querySelector('.booking-name').value = currentUser.name || '';
+        form.querySelector('.phone-input').value = currentUser.phone || '';
+        setupTgField(form);
+        form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
+      }
+    });
+  }
 
-  document.getElementById('btn-order-service').addEventListener('click', () => {
-    const srvName = document.getElementById('srv-title').textContent;
-    const srvPriceStr = document.getElementById('srv-price').textContent; 
-    
-    closeAllModals();
-    const bookingModal = document.getElementById('booking-modal');
-    bookingModal.classList.add('open'); playSound('modal');
-    const form = document.getElementById('booking-form');
-    form.querySelector('.booking-car').value = srvName; 
-    
-    const cleanPrice = srvPriceStr.replace(/\D/g, ''); 
-    form.querySelector('.booking-price-input').value = cleanPrice;
+  const btnOrderService = document.getElementById('btn-order-service');
+  if (btnOrderService) {
+    btnOrderService.addEventListener('click', () => {
+      const srvName = document.getElementById('srv-title').textContent;
+      const srvPriceStr = document.getElementById('srv-price').textContent; 
+      
+      closeAllModals();
+      const bookingModal = document.getElementById('booking-modal');
+      bookingModal.classList.add('open'); playSound('modal');
+      const form = document.getElementById('booking-form');
+      form.querySelector('.booking-car').value = srvName; 
+      
+      const cleanPrice = srvPriceStr.replace(/\D/g, ''); 
+      form.querySelector('.booking-price-input').value = cleanPrice;
 
-    if (currentUser) {
-      form.querySelector('.booking-name').value = currentUser.name || '';
-      form.querySelector('.phone-input').value = currentUser.phone || '';
-      setupTgField(form);
-      form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
-    }
-  });
+      if (currentUser) {
+        form.querySelector('.booking-name').value = currentUser.name || '';
+        form.querySelector('.phone-input').value = currentUser.phone || '';
+        setupTgField(form);
+        form.querySelector('.discount-hint').style.display = (!currentUser.hasOrders) ? 'block' : 'none';
+      }
+    });
+  }
 
-  document.getElementById('btn-save-build').addEventListener('click', async () => {
-    if (!authToken) { authModal.classList.add('open'); return; }
-    const car = selectedText.textContent;
-    const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
-    try {
-      const res = await fetch('/api/user/save-build', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ car_name: car, build_text: parts.join(' + ') || 'Сток', total_hp: parseInt(document.getElementById('total-hp').textContent), total_price: parseInt(document.getElementById('total-price').textContent.replace(/\s/g, '')) })
-      });
-      const data = await res.json();
-      if (res.ok) showToast('Сборка сохранена в гараже!', 'success');
-      else showToast(data.error || 'Ошибка', 'error');
-    } catch (err) { showToast('Ошибка сервера', 'error'); }
-  });
+  const btnSaveBuild = document.getElementById('btn-save-build');
+  if (btnSaveBuild) {
+    btnSaveBuild.addEventListener('click', async () => {
+      if (!authToken) { authModal.classList.add('open'); return; }
+      const car = selectedText.textContent;
+      const parts = []; partsCbs.forEach(cb => { if (cb.checked) parts.push(cb.nextElementSibling.textContent.split('(')[0].trim()); });
+      try {
+        const res = await fetch('/api/user/save-build', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ car_name: car, build_text: parts.join(' + ') || 'Сток', total_hp: parseInt(document.getElementById('total-hp').textContent), total_price: parseInt(document.getElementById('total-price').textContent.replace(/\s/g, '')) })
+        });
+        const data = await res.json();
+        if (res.ok) showToast('Сборка сохранена в гараже!', 'success');
+        else showToast(data.error || 'Ошибка', 'error');
+      } catch (err) { showToast('Ошибка сервера', 'error'); }
+    });
+  }
 
   const videoModal = document.getElementById('video-modal');
   const video = document.getElementById('credits-video');
@@ -776,26 +804,38 @@
   const timeDisplay = document.getElementById('time-display');
   const muteBtn = document.getElementById('mute-btn');
 
-  document.getElementById('credits-btn').addEventListener('click', () => {
-    videoModal.classList.add('open'); video.currentTime = 0; video.play(); playPauseBtn.textContent = '⏸';
-  });
+  const creditsBtn = document.getElementById('credits-btn');
+  if (creditsBtn) {
+    creditsBtn.addEventListener('click', () => {
+      videoModal.classList.add('open'); video.currentTime = 0; video.play(); playPauseBtn.textContent = '⏸';
+    });
+  }
 
   function closeVideo() { videoModal.classList.remove('open'); video.pause(); }
-  document.getElementById('close-video-btn').addEventListener('click', closeVideo);
-  videoModal.addEventListener('click', (e) => { if (e.target === videoModal) closeVideo(); });
+  const closeVideoBtn = document.getElementById('close-video-btn');
+  if (closeVideoBtn) closeVideoBtn.addEventListener('click', closeVideo);
+  if (videoModal) videoModal.addEventListener('click', (e) => { if (e.target === videoModal) closeVideo(); });
 
-  playPauseBtn.addEventListener('click', () => {
-    if (video.paused) { video.play(); playPauseBtn.textContent = '⏸'; } 
-    else { video.pause(); playPauseBtn.textContent = '▶'; }
-  });
+  if (playPauseBtn) {
+    playPauseBtn.addEventListener('click', () => {
+      if (video.paused) { video.play(); playPauseBtn.textContent = '⏸'; } 
+      else { video.pause(); playPauseBtn.textContent = '▶'; }
+    });
+  }
 
-  muteBtn.addEventListener('click', () => {
-    video.muted = !video.muted; muteBtn.textContent = video.muted ? '🔇' : '🔊';
-  });
+  if (muteBtn) {
+    muteBtn.addEventListener('click', () => {
+      video.muted = !video.muted; muteBtn.textContent = video.muted ? '🔇' : '🔊';
+    });
+  }
 
   function formatTime(seconds) { const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); return `${m}:${s < 10 ? '0' : ''}${s}`; }
-  video.addEventListener('timeupdate', () => { const percent = (video.currentTime / video.duration) * 100; progressBar.style.width = `${percent}%`; timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`; });
-  progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
+  if (video) {
+    video.addEventListener('timeupdate', () => { const percent = (video.currentTime / video.duration) * 100; progressBar.style.width = `${percent}%`; timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`; });
+  }
+  if (progressContainer) {
+    progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
+  }
 
   window.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && authToken) {
@@ -818,51 +858,60 @@
     playSound('modal');
   };
 
-  document.getElementById('card-number').addEventListener('input', (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    let formatted = val.match(/.{1,4}/g)?.join(' ') || '';
-    e.target.value = formatted;
-  });
+  const cardNumber = document.getElementById('card-number');
+  if (cardNumber) {
+    cardNumber.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      let formatted = val.match(/.{1,4}/g)?.join(' ') || '';
+      e.target.value = formatted;
+    });
+  }
 
-  document.getElementById('card-expiry').addEventListener('input', (e) => {
-    let val = e.target.value.replace(/\D/g, '');
-    if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
-    e.target.value = val;
-  });
+  const cardExpiry = document.getElementById('card-expiry');
+  if (cardExpiry) {
+    cardExpiry.addEventListener('input', (e) => {
+      let val = e.target.value.replace(/\D/g, '');
+      if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2);
+      e.target.value = val;
+    });
+  }
 
-  document.getElementById('payment-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('btn-pay-submit');
-    btn.textContent = 'ОБРАБОТКА...';
-    
-    const card = document.getElementById('card-number').value;
-    const exp = document.getElementById('card-expiry').value;
-    const cvv = document.getElementById('card-cvv').value;
-    if (card.length < 19 || exp.length < 5 || cvv.length < 3) {
-      btn.textContent = 'ОПЛАТИТЬ';
-      return showToast('Проверьте данные карты', 'error');
-    }
-
-    try {
-      const res = await fetch(`/api/user/bookings/${currentPayId}/pay`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      const data = await res.json();
+  const paymentForm = document.getElementById('payment-form');
+  if (paymentForm) {
+    paymentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-pay-submit');
+      btn.textContent = 'ОБРАБОТКА...';
       
-      if (res.ok) {
-        paymentModal.classList.remove('open');
-        showToast('Оплата прошла успешно!', 'success');
-        loadBookings();
-      } else {
-        showToast(data.error, 'error');
+      const card = document.getElementById('card-number').value;
+      const exp = document.getElementById('card-expiry').value;
+      const cvv = document.getElementById('card-cvv').value;
+      if (card.length < 19 || exp.length < 5 || cvv.length < 3) {
+        btn.textContent = 'ОПЛАТИТЬ';
+        return showToast('Проверьте данные карты', 'error');
       }
-    } catch (err) {
-      showToast('Ошибка соединения с банком', 'error');
-    } finally {
-      btn.textContent = 'ОПЛАТИТЬ';
-    }
-  });
+
+      try {
+        const res = await fetch(`/api/user/bookings/${currentPayId}/pay`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (res.ok) {
+          paymentModal.classList.remove('open');
+          showToast('Оплата прошла успешно!', 'success');
+          loadBookings();
+        } else {
+          showToast(data.error, 'error');
+        }
+      } catch (err) {
+        showToast('Ошибка соединения с банком', 'error');
+      } finally {
+        btn.textContent = 'ОПЛАТИТЬ';
+      }
+    });
+  }
 
   setInterval(() => {
     if (!authToken) return;
