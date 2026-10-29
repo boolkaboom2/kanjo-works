@@ -6,6 +6,9 @@
     return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
   }
 
+  // ПЕРЕМЕЩЕНО НАВЕРХ: чтобы избежать ReferenceError
+  const partsCbs = document.querySelectorAll('.part-row input[type="checkbox"]');
+
   const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
   const observer = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
@@ -128,7 +131,12 @@
       return;
     }
 
-    grid.innerHTML = Array(4).fill(0).map(() => `<div class="skeleton-card-car"><div class="skeleton"></div></div>`).join('');
+    grid.innerHTML = Array(4).fill(0).map(() => `
+      <div class="skeleton-card-car">
+        <div class="skeleton"></div>
+      </div>
+    `).join('');
+
     const res = await fetch('/api/cars'); 
     carsData = await res.json();
     sessionStorage.setItem('kanjo_cars', JSON.stringify(carsData));
@@ -138,6 +146,7 @@
   function renderCars(data) {
     const grid = document.getElementById('gallery-grid');
     grid.innerHTML = data.map((c, i) => `<div class="gallery-item reveal reveal-delay-${(i % 3) + 1}" data-index="${i}"><img src="${escapeHTML(c.img)}" alt="${escapeHTML(c.title)}"><div class="gallery-item-info"><h4>${escapeHTML(c.title)}</h4><p>${escapeHTML(c.spec)}</p></div></div>`).join('');
+    
     document.querySelectorAll('.gallery-item').forEach(item => {
       item.addEventListener('click', () => {
         const car = data[item.dataset.index]; playSound('click'); 
@@ -183,7 +192,14 @@
       return;
     }
 
-    grid.innerHTML = Array(3).fill(0).map(() => `<div class="skeleton-card-service"><div class="skeleton skeleton-line title"></div><div class="skeleton skeleton-line text"></div><div class="skeleton skeleton-line text" style="width: 70%;"></div></div>`).join('');
+    grid.innerHTML = Array(3).fill(0).map(() => `
+      <div class="skeleton-card-service">
+        <div class="skeleton skeleton-line title"></div>
+        <div class="skeleton skeleton-line text"></div>
+        <div class="skeleton skeleton-line text" style="width: 70%;"></div>
+      </div>
+    `).join('');
+
     const res = await fetch('/api/services'); 
     servicesData = await res.json();
     sessionStorage.setItem('kanjo_services', JSON.stringify(servicesData));
@@ -193,6 +209,7 @@
   function renderServices(data) {
     const grid = document.getElementById('services-grid');
     grid.innerHTML = data.map((s, i) => `<div class="service-card reveal reveal-delay-${(i % 3) + 1}" data-id="${s.id}"><span class="num">${escapeHTML(s.num)}</span><h3>${escapeHTML(s.title)}</h3><p>${escapeHTML(s.short)}</p></div>`).join('');
+    
     document.querySelectorAll('.service-card').forEach(card => {
       card.addEventListener('click', () => {
         const srv = data.find(s => s.id === parseInt(card.dataset.id));
@@ -256,7 +273,6 @@
     } catch (err) { showToast('Ошибка', 'error'); }
   });
 
-  const partsCbs = document.querySelectorAll('.part-row input[type="checkbox"]');
   function calculateConfig() {
     let hp = selectedCarHp || 0, price = selectedCarPrice || 0;
     partsCbs.forEach(cb => { if (cb.checked) { hp += parseInt(cb.dataset.hp) || 0; price += parseInt(cb.dataset.price) || 0; } });
@@ -373,14 +389,43 @@
     finally { btn.textContent = 'ПОДТВЕРДИТЬ'; }
   });
 
-  document.getElementById('forgot-pass-btn').addEventListener('click', async (e) => {
-    e.preventDefault(); const email = prompt('Введите ваш Email:'); if (!email) return;
+  // КАСТОМНАЯ МОДАЛКА ВОССТАНОВЛЕНИЯ ПАРОЛЯ
+  document.getElementById('forgot-pass-btn').addEventListener('click', (e) => {
+    e.preventDefault();
+    closeAllModals();
+    document.getElementById('forgot-modal').classList.add('open');
+    document.getElementById('forgot-form').reset();
+  });
+
+  document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('forgot-email').value;
+    const btn = document.getElementById('forgot-submit-btn');
+    const originalText = btn.textContent;
+    
+    if (!email) return showToast('Введите Email', 'error');
+    btn.textContent = 'ОТПРАВКА...';
+
     try {
-      const res = await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-      const data = await res.json(); 
-      if(res.ok) { showToast(`Ваш новый пароль: ${data.pass}`, 'success'); console.log(`Новый пароль для ${email}: ${data.pass}`); } 
-      else { showToast(data.error, 'error'); }
-    } catch (err) { showToast('Ошибка сервера', 'error'); }
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        closeAllModals();
+        showToast(`Новый пароль: ${data.pass}`, 'success');
+        document.getElementById('forgot-form').reset();
+      } else {
+        showToast(data.error, 'error');
+      }
+    } catch (err) {
+      showToast('Ошибка сервера', 'error');
+    } finally {
+      btn.textContent = originalText;
+    }
   });
 
   async function loadProfile() {
@@ -752,6 +797,15 @@
   video.addEventListener('timeupdate', () => { const percent = (video.currentTime / video.duration) * 100; progressBar.style.width = `${percent}%`; timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration || 0)}`; });
   progressContainer.addEventListener('click', (e) => { const rect = progressContainer.getBoundingClientRect(); const pos = (e.clientX - rect.left) / rect.width; video.currentTime = pos * video.duration; });
 
+  window.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && authToken) {
+      loadProfile();
+      if (document.getElementById('profile-modal').classList.contains('open')) { 
+        loadBookings(); loadBuilds(); loadUserReviews(); 
+      }
+    }
+  });
+
   const paymentModal = document.getElementById('payment-modal');
   let currentPayId = null;
 
@@ -810,24 +864,17 @@
     }
   });
 
-  // --- АВТООБНОВЛЕНИЕ ДЛЯ КЛИЕНТА (КАЖДЫЕ 5 СЕКУНД) ---
   setInterval(() => {
     if (!authToken) return;
     const profileModal = document.getElementById('profile-modal');
     
-    // Проверяем, открыто ли вообще окно личного кабинета
     if (profileModal.classList.contains('open')) {
       const activeTab = document.querySelector('.auth-tabs .auth-tab.active');
       if (activeTab) {
-        if (activeTab.id === 'tab-btn-bookings') {
-          // Тихо обновляем заявки, не меняя вкладку
-          loadBookings(); 
-        }
-        if (activeTab.id === 'tab-btn-reviews') {
-          loadUserReviews();
-        }
+        if (activeTab.id === 'tab-btn-bookings') loadBookings();
+        if (activeTab.id === 'tab-btn-reviews') loadUserReviews();
       }
     }
-  }, 5000); // 5000 мс = 5 секунд
+  }, 5000);
 
 })();
